@@ -1,0 +1,15 @@
+# SO
+.DS_Store
+Thumbs.db
+
+# Herramientas locales
+node_modules/
+dist/
+.cache/
+netlify/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

@@ -1,0 +1,15 @@
+[build]
+  publish = "public"
+  command = ""
+
+# Evitar cache agresivo del HTML (para ver cambios al instante)
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Permitir cache largo de imágenes (mejor performance)
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
