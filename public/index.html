@@ -18,7 +18,7 @@
       --brand-dark:#2b2d33;
       --brand-gray:#9aa3ad;
       --brand-light:#f6f7fb;
-      --thumb-h: 220px;
+      --thumb-h: 320px; /* imágenes del catálogo más grandes */
     }
     html,body{ font-family:'Inter',system-ui,Segoe UI,Roboto,Helvetica,Arial; }
     .brand{ color:var(--brand); }
@@ -28,18 +28,18 @@
     .btn-brand:hover{ filter:brightness(.93); }
     .card{ border-radius:1rem; box-shadow:0 8px 18px rgba(0,0,0,.05); }
 
-    /* Logos de marca (más grandes) */
-    .brand-logo { width: 24px; height: 24px; object-fit: contain; }
-    .brand-logo-lg { width: 32px; height: 32px; object-fit: contain; }
+    /* Logos UI */
+    .brand-logo { width: 28px; height: 28px; object-fit: contain; }
+    .brand-logo-lg { width: 36px; height: 36px; object-fit: contain; }
 
-    /* Miniaturas en catálogo (menos recorte) */
+    /* Imágenes catálogo (UI) */
     .prod-img{ width:100%; height:var(--thumb-h); background:#fff; border-radius:0.75rem; overflow:hidden; border:1px solid #eef2f7; }
-    .prod-img img{ width:100%; height:100%; object-fit:contain; padding:6px; cursor:zoom-in; }
+    .prod-img img{ width:100%; height:100%; object-fit:contain; padding:10px; cursor:zoom-in; }
 
-    /* Imagen en PDF */
-    .pdf-prod-img{ width:48px; height:48px; object-fit:contain; border:1px solid #e5e7eb; border-radius:.5rem; }
+    /* Imágenes en PDF — grandes */
+    .pdf-prod-img{ width:150px; height:150px; object-fit:contain; border:1px solid #e5e7eb; border-radius:.5rem; }
 
-    /* Carrito compacto (sin SKU, sin Importe, icono basura) */
+    /* Carrito (UI) */
     .cart-list .hdr{ display:none; }
     @media (min-width: 640px){
       .cart-list .hdr{
@@ -55,13 +55,10 @@
     .trash-btn{ color:#ef4444; display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:.5rem; }
     .trash-btn:hover{ background:#fee2e2; }
 
-    /* Chips de marca (un poco más grandes) */
-    .brand-chip{
-      display:inline-flex; align-items:center; gap:.5rem; border:1px solid #e5e7eb; border-radius:9999px;
-      padding:.45rem .9rem; cursor:pointer; user-select:none; font-size:.92rem;
-    }
+    /* Chips de marcas (UI) */
+    .brand-chip{ display:inline-flex; align-items:center; gap:.55rem; border:1px solid #e5e7eb; border-radius:9999px; padding:.6rem 1.05rem; cursor:pointer; user-select:none; font-size:1rem; }
     .brand-chip.active{ background:#fff0f5; border-color:var(--brand); color:var(--brand); }
-    .brand-chip .count{ font-variant-numeric: tabular-nums; font-size:.8rem; color:#6b7280; }
+    .brand-chip .count{ font-variant-numeric: tabular-nums; font-size:.9rem; color:#6b7280; }
 
     /* Impresión: solo exportamos #pdfDoc */
     @media print{
@@ -98,7 +95,7 @@
       <div class="card bg-white p-4">
         <div class="flex flex-wrap items-center gap-2">
           <div class="grow grid sm:grid-cols-2 gap-2">
-            <input id="q" class="border rounded-xl px-3 py-2" placeholder="Buscar (SKU, nombre, specs)" />
+            <input id="q" class="border rounded-xl px-3 py-2" placeholder="Buscar (nombre, specs)" />
             <select id="category" class="border rounded-xl px-3 py-2">
               <option value="">Todas las categorías</option>
             </select>
@@ -117,7 +114,7 @@
         <div id="brandChips" class="flex flex-wrap gap-2"></div>
       </div>
 
-      <!-- Catálogo -->
+      <!-- Catálogo (agrupado por marca) -->
       <div id="catalog"></div>
     </section>
 
@@ -145,7 +142,7 @@
             <span>Total</span><span id="total">$0.00</span>
           </div>
 
-          <!-- Opción internacional -->
+          <!-- Modo internacional -->
           <div class="mt-2 grid grid-cols-1 gap-2">
             <label class="inline-flex items-center gap-2">
               <input id="intl" type="checkbox" class="w-4 h-4 accent-[var(--brand)]">
@@ -158,9 +155,11 @@
           </div>
         </div>
 
+        <!-- Carrito compacto -->
         <div id="cartTable" class="mt-3 border-t pt-3 cart-list"></div>
       </div>
 
+      <!-- Financiamiento -->
       <div class="card bg-white p-4">
         <h3 class="font-semibold mb-2">Financiamiento</h3>
         <div class="grid grid-cols-2 gap-2 text-sm">
@@ -202,9 +201,8 @@
     <table class="w-full text-sm border">
       <thead class="bg-gray-50">
         <tr>
-          <th class="p-2 text-left">SKU</th>
-          <th class="p-2 text-left">Descripción</th>
-          <th class="p-2 text-right" id="pdfPriceHeader">Precio (MXN)</th>
+          <th class="p-2 text-left">Producto</th>
+          <th class="p-2 text-right" id="pdfPriceHeader">Precio</th>
           <th class="p-2 text-right">Cant</th>
           <th class="p-2 text-right">Importe</th>
         </tr>
@@ -225,7 +223,7 @@
     <div class="mt-6">
       <h3 class="font-semibold mb-2">Plan de financiamiento</h3>
       <div class="text-sm mb-2">
-        Enganche: <span id="pdfDownPct">20%</span> · Monto: <span id="pdfDownAmt">$0.00</span>
+        Enganche (planes con interés): <span id="pdfDownPct">20%</span> · Monto: <span id="pdfDownAmt">$0.00</span>
       </div>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm" id="pdfFinTable"></div>
     </div>
@@ -239,7 +237,7 @@
     © <span id="year"></span> MDC DIGITAL • Odontología Inteligente
   </footer>
 
-  <!-- Modal de imagen -->
+  <!-- Modal de imagen (UI) -->
   <div id="imgModal" class="fixed inset-0 z-50 hidden no-print items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-labelledby="modalCaption">
     <div class="relative bg-white rounded-2xl shadow-xl max-w-3xl w-full">
       <button id="modalClose" class="absolute top-3 right-3 p-2 rounded-lg text-gray-500 hover:bg-gray-100" aria-label="Cerrar (Esc)">
@@ -252,7 +250,7 @@
     </div>
   </div>
 
-  <!-- Catálogo embebido (puedes añadir "image": "URL" opcional por item) -->
+  <!-- Catálogo embebido (ACTUALIZADO) -->
   <script id="catalogData" type="application/json">
   [
     {"sku":"RHINO-A51","name":"Fresadora RHINO A51 Seco","brand":"Rhino","category":"Fresadoras","unit_price":353970,"description":"5 ejes en seco, JAEGER, PANASONIC, cambiador automático."},
@@ -301,12 +299,12 @@
   </script>
 
   <script>
-    /* ===== Parámetros ocultos ===== */
-    const APR = 22;          // tasa anual fija
-    const IVA_PCT = 16;      // IVA fijo (%)
-    const INCLUDE_PDF_IMAGES = true;
+    /* ===== Parámetros ===== */
+    const APR = 22;           // Interés anual (planes con interés)
+    const IVA_PCT = 16;       // IVA fijo
+    const INCLUDE_PDF_IMAGES = true; // Mostrar imágenes en PDF
 
-    /* ===== Logos de marca (UI) ===== */
+    /* Logos de marca (solo UI) */
     const BRAND_LOGOS = {
       "Rhino": "images/brands/rhino.png",
       "imes-icore": "images/brands/imes-icore.png",
@@ -321,7 +319,7 @@
     const slug = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
     const brandLogoUrl = b => BRAND_LOGOS[b] || (b ? `images/brands/${slug(b)}.png` : "");
 
-    /* ===== Folio autoincrementable mensual ===== */
+    /* Folio autoincrementable por mes */
     const FOLIO_START = 1;
     let CURRENT_FOLIO = null;
     function nextFolio() {
@@ -341,7 +339,7 @@
       return CURRENT_FOLIO;
     }
 
-    /* ===== Carga de imágenes de producto con fallback ===== */
+    /* Imágenes por SKU (oculto para el usuario) */
     function productImageCandidates(p){
       const c = [];
       if (p.image) c.push(p.image);
@@ -354,18 +352,17 @@
       img.onerror = next; next();
     }
 
-    /* ===== Catálogo embebido ===== */
+    /* Catálogo + estado */
     let CATALOG = JSON.parse(document.getElementById('catalogData').textContent);
     let selectedBrand = '';
-
-    /* ===== Estado y helpers de moneda ===== */
     const state = { items: [], intl:false, fx:17.00 };
+
     const currencyCode = ()=> state.intl ? 'USD' : 'MXN';
     const money = n => Number(n||0).toLocaleString(state.intl ? 'en-US' : 'es-MX', { style:'currency', currency: currencyCode() });
     const conv  = mxn => state.intl ? (mxn / Math.max(0.0001, state.fx)) : mxn;
     const payAmortized = (P, annualPct, n) => { const r = (Number(annualPct)||0)/100/12; return r<=0 ? P/n : P * (r / (1 - Math.pow(1 + r, -n))); };
 
-    /* ===== UI: categorías, marcas, catálogo ===== */
+    /* Render UI */
     function refreshCategories(){
       const catSel = document.getElementById('category');
       const current = catSel.value || '';
@@ -376,8 +373,7 @@
     }
     function refreshBrandChips(){
       const wrap = document.getElementById('brandChips');
-      const counts = {};
-      CATALOG.forEach(p => { counts[p.brand] = (counts[p.brand]||0) + 1; });
+      const counts = {}; CATALOG.forEach(p => { counts[p.brand] = (counts[p.brand]||0) + 1; });
       const brands = Object.keys(counts).sort((a,b)=> a.localeCompare(b,'es',{sensitivity:'base'}));
       wrap.innerHTML = brands.map(b => `
         <button class="brand-chip ${selectedBrand===b?'active':''}" data-brand="${b}">
@@ -395,8 +391,7 @@
       document.getElementById('clearBrand').onclick = ()=>{ selectedBrand=''; refreshBrandChips(); applyFilters(); };
     }
     function renderCatalog(list) {
-      const byBrand = {};
-      list.forEach(p => { const k = p.brand || 'Sin marca'; (byBrand[k] ||= []).push(p); });
+      const byBrand = {}; list.forEach(p => { const k = p.brand || 'Sin marca'; (byBrand[k] ||= []).push(p); });
       const brandNames = Object.keys(byBrand).sort((a,b)=> a.localeCompare(b,'es',{sensitivity:'base'}));
 
       const html = brandNames.map(brand => {
@@ -407,7 +402,7 @@
               <img src="${brandLogoUrl(p.brand)}" alt="${p.brand}" class="brand-logo" onerror="this.style.display='none'">
               <h3 class="font-semibold leading-tight">${p.name}</h3>
             </div>
-            <div class="text-xs brand-gray">${p.sku} • ${p.category} • ${p.brand || 'Sin marca'}</div>
+            <div class="text-xs brand-gray">${p.category} • ${p.brand || 'Sin marca'}</div>
             <p class="text-sm">${p.description || ''}</p>
             <div class="flex items-baseline gap-2 mt-1">
               <span class="text-lg font-semibold">${money(conv(p.unit_price))}</span>
@@ -434,7 +429,6 @@
       const grid = document.getElementById('catalog');
       grid.innerHTML = html || '<p class="text-sm brand-gray">No hay productos que coincidan.</p>';
 
-      // Imágenes + modal
       Array.from(document.querySelectorAll('#catalog .prod-img-el')).forEach(img=>{
         const sku = img.getAttribute('data-sku');
         const p = list.find(x => x.sku === sku) || CATALOG.find(x => x.sku === sku);
@@ -442,7 +436,6 @@
         img.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); openModal(img.src, p.name); });
       });
 
-      // Sólo botón agrega
       Array.from(document.querySelectorAll('#catalog button[data-sku]')).forEach(btn => {
         btn.addEventListener('click', () => {
           const sku = btn.getAttribute('data-sku');
@@ -464,7 +457,7 @@
       renderCatalog(list);
     }
 
-    /* ===== Carrito ===== */
+    /* Carrito */
     function addItem(p, qty=1){
       if (!p) return;
       const ex = state.items.find(it => it.sku === p.sku);
@@ -527,7 +520,7 @@
       document.getElementById('total').textContent      = money(total);
     }
 
-    /* ===== PDF + Financiamiento ===== */
+    /* PDF */
     function renderPDF(forceShow=false){
       const doc = document.getElementById('pdfDoc');
       doc.style.display = state.items.length ? 'block' : (forceShow ? 'block' : 'none');
@@ -535,7 +528,6 @@
       const d = new Date();
       document.getElementById('year').textContent = d.getFullYear();
       document.getElementById('pdfDate').textContent = d.toLocaleDateString('es-MX');
-
       const v = new Date(d); v.setMonth(v.getMonth() + 1);
       document.getElementById('pdfValidUntil').textContent = v.toLocaleDateString('es-MX');
 
@@ -543,7 +535,7 @@
 
       const body = document.getElementById('pdfItemsBody');
       if (!state.items.length){
-        body.innerHTML = `<tr><td colspan="5" class="p-4 text-center brand-gray">Sin productos seleccionados.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="4" class="p-4 text-center brand-gray">Sin productos seleccionados.</td></tr>`;
         document.getElementById('pdfSubtotal').textContent = money(0);
         document.getElementById('pdfDiscount').textContent = '-' + money(0);
         document.getElementById('pdfIva').textContent      = money(0);
@@ -555,15 +547,20 @@
       }
 
       const rows = state.items.map(it=>{
+        const catItem = CATALOG.find(x => x.sku === it.sku);
+        const desc = (catItem && catItem.description) ? catItem.description : '';
         const unit  = conv(it.unit_price);
         const amount= unit*it.qty;
         const imgHtml = INCLUDE_PDF_IMAGES ? `<img src="images/products/${it.sku}.png" class="pdf-prod-img" onerror="this.style.display='none'">` : '';
         return `
-          <tr class="border-b">
-            <td class="p-2">${it.sku}</td>
+          <tr class="border-b align-top">
             <td class="p-2">
-              <div class="flex items-center gap-2">
-                ${imgHtml}<div>${it.name}</div>
+              <div class="flex gap-3">
+                ${imgHtml}
+                <div>
+                  <div class="font-medium">${it.name}</div>
+                  ${desc ? `<div class="text-xs text-gray-600 mt-1">${desc}</div>` : ``}
+                </div>
               </div>
             </td>
             <td class="p-2 text-right">${money(unit)}</td>
@@ -593,7 +590,6 @@
       document.getElementById('pdfDownPct').textContent = `${Math.round(downPct*100)}%`;
       document.getElementById('pdfDownAmt').textContent = money(downAmt);
 
-      // (DESPUÉS) Planes con interés + opción 1/3 + 12 MSI (0%)
       const terms = [12,24,36,48];
       let plansHtml = terms.map(term => `
         <div class="border rounded-xl p-2">
@@ -601,7 +597,7 @@
           <div class="font-semibold">${money(payAmortized(financed, APR, term))}</div>
         </div>`).join('');
 
-      // Plan especial: 1/3 de enganche y 12 MSI (0% interés)
+      /* 1/3 enganche + 12 MSI (0% interés) */
       const msiDownPct = 1/3;
       const msiDownAmt = total * msiDownPct;
       const msiMonthly = (total - msiDownAmt) / 12;
@@ -612,12 +608,10 @@
           <div class="text-xs brand-gray mt-1">Enganche: ${money(msiDownAmt)}</div>
         </div>`;
 
-      // Aplica en UI y PDF
       document.getElementById('pdfFinTable').innerHTML = plansHtml + msiHtml;
       document.getElementById('finTable').innerHTML    = plansHtml + msiHtml;
 
-
-
+      /* Notas instalación/capacitación */
       const hasMills  = state.items.some(it => (it.category || '') === 'Fresadoras');
       const hasOthers = state.items.some(it => (it.category || '') !== 'Fresadoras');
       let instNote = '';
@@ -636,7 +630,7 @@
       document.getElementById('pdfNotesBottom').innerHTML = bottom;
     }
 
-    /* ===== Modal imagen ===== */
+    /* Modal imagen */
     let modalEl, modalImg, modalCap, modalCloseBtn, lastFocused=null;
     function openModal(src, caption=''){
       if (!src) return;
@@ -651,18 +645,16 @@
       if (lastFocused) { try{ lastFocused.focus(); }catch{} }
     }
 
-    /* ===== Init ===== */
+    /* Init */
     (function init(){
       const d = new Date(); document.getElementById('year').textContent = d.getFullYear();
 
-      // Modal
       modalEl = document.getElementById('imgModal'); modalImg = document.getElementById('modalImg');
       modalCap = document.getElementById('modalCaption'); modalCloseBtn = document.getElementById('modalClose');
       modalEl.addEventListener('click', (e)=>{ if (e.target === modalEl) closeModal(); });
       modalCloseBtn.addEventListener('click', closeModal);
       window.addEventListener('keydown', (e)=>{ if (!modalEl.classList.contains('hidden') && e.key === 'Escape') closeModal(); });
 
-      // Filtros
       document.getElementById('apply').addEventListener('click', applyFilters);
       document.getElementById('clear').addEventListener('click', () => {
         document.getElementById('q').value=''; document.getElementById('category').value='';
@@ -670,24 +662,7 @@
       });
       document.getElementById('q').addEventListener('keydown', (e)=>{ if (e.key === 'Enter') applyFilters(); });
 
-      // Acciones
       document.getElementById('btnPrint').addEventListener('click', () => { ensureFolio(); renderPDF(true); window.print(); });
-      document.getElementById('btnClearCart').addEventListener('click', () => { state.items=[]; renderCart(); });
-      document.getElementById('discount').addEventListener('input', () => { recalc(); renderPDF(); });
-      document.getElementById('downPct').addEventListener('change', renderPDF);
-
-      // Internacional (USD)
-      const intlEl = document.getElementById('intl'); const fxEl = document.getElementById('fx');
-      intlEl.addEventListener('change', ()=>{
-        state.intl = intlEl.checked;
-        document.getElementById('fxWrap').classList.toggle('hidden', !state.intl);
-        applyFilters(); renderCart();
-      });
-      fxEl.addEventListener('input', ()=>{
-        const v = Number(fxEl.value); if (!isFinite(v) || v <= 0) return;
-        state.fx = v; applyFilters(); renderCart();
-      });
-
       document.getElementById('btnPDF').addEventListener('click', () => {
         ensureFolio(); renderPDF(true);
         const opt = {
@@ -700,7 +675,27 @@
         html2pdf().set(opt).from(document.getElementById('pdfDoc')).save();
       });
 
-      refreshCategories(); refreshBrandChips(); applyFilters(); renderCart(); renderPDF();
+      document.getElementById('btnClearCart').addEventListener('click', () => { state.items=[]; renderCart(); });
+      document.getElementById('discount').addEventListener('input', () => { recalc(); renderPDF(); });
+      document.getElementById('downPct').addEventListener('change', renderPDF);
+
+      const intlEl = document.getElementById('intl'); const fxEl = document.getElementById('fx'); const fxWrap = document.getElementById('fxWrap');
+      intlEl.addEventListener('change', () => {
+        state.intl = intlEl.checked;
+        fxWrap.classList.toggle('hidden', !state.intl);
+        recalc(); renderCatalog(CATALOG); renderPDF();
+      });
+      fxEl.addEventListener('input', () => {
+        const v = Number(fxEl.value)||0;
+        state.fx = Math.max(0.0001, v);
+        recalc(); renderCatalog(CATALOG); renderPDF();
+      });
+
+      refreshCategories();
+      refreshBrandChips();
+      applyFilters();
+      renderCart();
+      renderPDF();
     })();
   </script>
 </body>
