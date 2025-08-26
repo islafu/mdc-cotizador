@@ -60,6 +60,14 @@
     .brand-chip.active{ background:#fff0f5; border-color:var(--brand); color:var(--brand); }
     .brand-chip .count{ font-variant-numeric: tabular-nums; font-size:.9rem; color:#6b7280; }
 
+    /* Toasts */
+    #toastStack{ position:fixed; top:16px; right:16px; z-index:60; display:flex; flex-direction:column; gap:10px; }
+    .toast{ background:#111827; color:#fff; padding:10px 12px; border-radius:12px; box-shadow:0 10px 20px rgba(0,0,0,.18); display:flex; gap:8px; align-items:center; opacity:0; transform:translateY(-6px); transition:opacity .2s ease, transform .2s ease; font-size:.9rem; }
+    .toast.show{ opacity:1; transform:translateY(0); }
+    .toast.success{ background:#065f46; }
+    .toast.warn{ background:#92400e; }
+    .toast.info{  background:#1f2937; }
+
     /* Impresión: solo exportamos #pdfDoc */
     @media print{
       .no-print{ display:none !important; }
@@ -250,6 +258,9 @@
     </div>
   </div>
 
+  <!-- Contenedor de toasts -->
+  <div id="toastStack" class="no-print"></div>
+
   <!-- Catálogo embebido (ACTUALIZADO) -->
   <script id="catalogData" type="application/json">
   [
@@ -303,6 +314,7 @@
     const APR = 22;           // Interés anual (planes con interés)
     const IVA_PCT = 16;       // IVA fijo
     const INCLUDE_PDF_IMAGES = true; // Mostrar imágenes en PDF
+    const MAX_QTY_PER_PRODUCT = 10;  // Máximo 10 unidades por producto
 
     /* Logos de marca (solo UI) */
     const BRAND_LOGOS = {
@@ -339,6 +351,19 @@
       return CURRENT_FOLIO;
     }
 
+    /* Toasts */
+    function showToast(msg, type='warn', timeout=2400){
+      const stack = document.getElementById('toastStack');
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.innerHTML = `<span>${msg}</span>`;
+      stack.appendChild(el);
+      requestAnimationFrame(()=> el.classList.add('show'));
+      const close = () => { el.classList.remove('show'); setTimeout(()=> el.remove(), 200); };
+      setTimeout(close, timeout);
+      return { close };
+    }
+
     /* Imágenes por SKU (oculto para el usuario) */
     function productImageCandidates(p){
       const c = [];
@@ -361,6 +386,10 @@
     const money = n => Number(n||0).toLocaleString(state.intl ? 'en-US' : 'es-MX', { style:'currency', currency: currencyCode() });
     const conv  = mxn => state.intl ? (mxn / Math.max(0.0001, state.fx)) : mxn;
     const payAmortized = (P, annualPct, n) => { const r = (Number(annualPct)||0)/100/12; return r<=0 ? P/n : P * (r / (1 - Math.pow(1 + r, -n))); };
+
+    function clampQty(v){
+      return Math.max(1, Math.min(MAX_QTY_PER_PRODUCT, parseInt(v,10) || 1));
+    }
 
     /* Render UI */
     function refreshCategories(){
@@ -409,7 +438,7 @@
               <span class="text-xs brand-gray">(${currencyCode()})</span>
             </div>
             <div class="mt-2 flex gap-2">
-              <input type="number" min="1" value="1" class="border rounded px-2 py-1 w-20" id="qty-${p.sku}">
+              <input type="number" min="1" max="${MAX_QTY_PER_PRODUCT}" value="1" class="border rounded px-2 py-1 w-20" id="qty-${p.sku}">
               <button class="px-3 py-2 rounded-2xl btn-brand" data-sku="${p.sku}">Agregar</button>
             </div>
           </article>
@@ -440,7 +469,11 @@
         btn.addEventListener('click', () => {
           const sku = btn.getAttribute('data-sku');
           const p = CATALOG.find(x => x.sku === sku);
-          const qty = Math.max(1, parseInt((document.getElementById(`qty-${sku}`)?.value || '1'), 10));
+          const raw = document.getElementById(`qty-${sku}`)?.value || '1';
+          const qty = clampQty(raw);
+          if (parseInt(raw,10) > MAX_QTY_PER_PRODUCT) {
+            showToast(`Máximo ${MAX_QTY_PER_PRODUCT} unidades por producto.`, 'info');
+          }
           addItem(p, qty);
         });
       });
@@ -460,13 +493,44 @@
     /* Carrito */
     function addItem(p, qty=1){
       if (!p) return;
+      const add = clampQty(qty);
       const ex = state.items.find(it => it.sku === p.sku);
-      if (ex) ex.qty += qty;
-      else state.items.push({ sku:p.sku, name:p.name, unit_price:p.unit_price, qty, category:p.category });
+      if (ex) {
+        const wanted = ex.qty + add;
+        const capped  = clampQty(wanted);
+        if (capped === ex.qty) {
+          showToast(`Máximo ${MAX_QTY_PER_PRODUCT} unidades por producto.`, 'info');
+        } else if (capped < wanted) {
+          showToast(`Se agregaron ${capped - ex.qty} (tope ${MAX_QTY_PER_PRODUCT}).`, 'info');
+        } else {
+          showToast(`Cantidad actual: ${capped}.`, 'success', 1500);
+        }
+        ex.qty = capped;
+      } else {
+        state.items.push({
+          sku:p.sku, name:p.name, unit_price:p.unit_price,
+          qty:add, category:p.category
+        });
+        showToast(`Producto agregado (${add}).`, 'success', 1500);
+      }
       renderCart();
     }
-    function removeItem(i){ state.items.splice(i,1); renderCart(); }
-    function updateQty(i,v){ state.items[i].qty = Math.max(1, parseInt(v,10)||1); renderCart(); }
+    function removeItem(i){
+      state.items.splice(i,1);
+      renderCart();
+      showToast('Producto eliminado.', 'info', 1400);
+    }
+    function updateQty(i, v){
+      const prev = state.items[i].qty;
+      const newQty = clampQty(v);
+      state.items[i].qty = newQty;
+      renderCart();
+      if (parseInt(v,10) !== newQty) {
+        showToast(`Máximo ${MAX_QTY_PER_PRODUCT} unidades por producto.`, 'info');
+      } else if (newQty !== prev) {
+        showToast(`Cantidad: ${newQty}.`, 'success', 1200);
+      }
+    }
     window.removeItem = removeItem; window.updateQty = updateQty;
 
     function renderCart(){
@@ -490,7 +554,7 @@
           </div>
           <div class="cart-num hidden sm:block">${money(conv(it.unit_price))}</div>
           <div class="cart-num">
-            <input type="number" min="1" value="${it.qty}" class="border rounded px-2 py-1 cart-qty no-print" onchange="updateQty(${i}, this.value)" />
+            <input type="number" min="1" max="${MAX_QTY_PER_PRODUCT}" value="${it.qty}" class="border rounded px-2 py-1 cart-qty no-print" onchange="updateQty(${i}, this.value)" />
           </div>
           <div class="text-right">
             <button class="trash-btn no-print" title="Eliminar" aria-label="Eliminar" onclick="removeItem(${i})">
@@ -675,7 +739,7 @@
         html2pdf().set(opt).from(document.getElementById('pdfDoc')).save();
       });
 
-      document.getElementById('btnClearCart').addEventListener('click', () => { state.items=[]; renderCart(); });
+      document.getElementById('btnClearCart').addEventListener('click', () => { state.items=[]; renderCart(); showToast('Carrito vacío.', 'info', 1200); });
       document.getElementById('discount').addEventListener('input', () => { recalc(); renderPDF(); });
       document.getElementById('downPct').addEventListener('change', renderPDF);
 
@@ -684,6 +748,7 @@
         state.intl = intlEl.checked;
         fxWrap.classList.toggle('hidden', !state.intl);
         recalc(); renderCatalog(CATALOG); renderPDF();
+        showToast(state.intl ? 'Modo internacional (USD) activado.' : 'Modo MXN activado.', 'info', 1400);
       });
       fxEl.addEventListener('input', () => {
         const v = Number(fxEl.value)||0;
