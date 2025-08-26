@@ -829,11 +829,12 @@
       downCustomInput.addEventListener('input', function(){ renderPDF(); });
 
       /* Internacional */
+      var intlEl = document.getElementById('intl'); var fxEl = document.getElementById('fx'); var fxWrap = document.getElementById('fxWrap');
       intlEl.addEventListener('change', function(){
         state.intl = !!intlEl.checked;
         fxWrap.classList.toggle('hidden', !state.intl);
 
-        // Re-pintar carrito (incluye recalc + PDF internamente)
+        // Re-pintar carrito (actualiza precios inmediatamente)
         renderCart();
 
         // Re-pintar catálogo para ver precios en la nueva moneda
@@ -841,7 +842,6 @@
 
         showToast(state.intl ? 'Modo internacional (USD) activado.' : 'Modo MXN activado.','info',1400);
       });
-
       fxEl.addEventListener('input', function(){
         var v = Number(fxEl.value)||0; state.fx = Math.max(0.0001, v);
 
@@ -849,7 +849,6 @@
         renderCart();
         renderCatalog(CATALOG);
       });
-
 
       /* Init render */
       var d = new Date(); document.getElementById('year').textContent = String(d.getFullYear());
