@@ -672,6 +672,21 @@
         renderPDF();
       }
 
+      /* === Helpers para PDF === */
+      function waitForImages(el){
+        var imgs = el.querySelectorAll('img');
+        var list = [];
+        for (var i=0;i<imgs.length;i++){
+          var img = imgs[i];
+          if (img.complete) { /* ya está */ }
+          else {
+            list.push(new Promise(function(res){ img.onload = img.onerror = function(){ res(); }; }));
+          }
+        }
+        return Promise.all(list);
+      }
+      function delay(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
       /* PDF */
       function renderPDF(forceShow){
         if (forceShow === undefined) forceShow = false;
@@ -707,7 +722,9 @@
           var desc = (catItem && catItem.description) ? catItem.description : '';
           var unit  = conv(it.unit_price);
           var amount= unit*it.qty;
-          var imgHtml = INCLUDE_PDF_IMAGES ? ('<img src="images/products/'+it.sku+'.png" class="pdf-prod-img" onerror="this.style.display=\'none\'">') : '';
+          var imgHtml = INCLUDE_PDF_IMAGES
+            ? ('<img src="images/products/'+it.sku+'.png" class="pdf-prod-img" crossorigin="anonymous" onerror="this.style.display=\'none\'">')
+            : '';
           rows += ''
             + '<tr class="border-b align-top">'
             +   '<td class="p-2"><div class="flex gap-3">'+ imgHtml +'<div><div class="font-medium">'+ it.name +'</div>'+ (desc ? ('<div class="text-xs text-gray-600 mt-1">'+ desc +'</div>') : '') +'</div></div></td>'
@@ -807,10 +824,41 @@
       document.getElementById('q').addEventListener('keydown', function(e){ if (e.key === 'Enter') applyFilters(); });
 
       document.getElementById('btnPrint').addEventListener('click', function(){ ensureFolio(); renderPDF(true); window.print(); });
-      document.getElementById('btnPDF').addEventListener('click', function(){
-        ensureFolio(); renderPDF(true);
-        var opt = { margin:10, filename:'Cotizacion_'+ document.getElementById('pdfFolio').textContent +'.pdf', image:{ type:'jpeg', quality:0.98 }, html2canvas:{ scale:2, useCORS:true }, jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' } };
-        html2pdf().set(opt).from(document.getElementById('pdfDoc')).save();
+
+      /* === Descargar PDF (FIX: esperar imágenes y reflow) === */
+      document.getElementById('btnPDF').addEventListener('click', async function(){
+        try{
+          var pdfEl = document.getElementById('pdfDoc');
+          ensureFolio();
+          renderPDF(true);
+
+          // asegurar en viewport (evita capturas parciales)
+          pdfEl.style.display = 'block';
+          pdfEl.scrollIntoView({behavior:'auto', block:'start'});
+
+          // espera imágenes y un pequeño reflow
+          await waitForImages(pdfEl);
+          await delay(50);
+
+          var opt = {
+            margin: 10,
+            filename: 'Cotizacion_' + document.getElementById('pdfFolio').textContent + '.pdf',
+            image: { type:'jpeg', quality:0.98 },
+            html2canvas: {
+              scale: 2,
+              useCORS: true,
+              allowTaint: true,
+              imageTimeout: 1500,
+              scrollY: -window.scrollY
+            },
+            jsPDF: { unit:'mm', format:'a4', orientation:'portrait' }
+          };
+
+          await html2pdf().set(opt).from(pdfEl).save();
+        }catch(err){
+          console.error(err);
+          showToast('No se pudo generar el PDF. Revisa la consola.', 'warn', 2600);
+        }
       });
 
       document.getElementById('btnClearCart').addEventListener('click', function(){ state.items=[]; renderCart(); showToast('Carrito vacío.','info',1200); });
@@ -834,18 +882,14 @@
         state.intl = !!intlEl.checked;
         fxWrap.classList.toggle('hidden', !state.intl);
 
-        // Re-pintar carrito (actualiza precios inmediatamente)
+        // Re-pintar carrito y catálogo (actualiza precios inmediatamente)
         renderCart();
-
-        // Re-pintar catálogo para ver precios en la nueva moneda
         renderCatalog(CATALOG);
 
         showToast(state.intl ? 'Modo internacional (USD) activado.' : 'Modo MXN activado.','info',1400);
       });
       fxEl.addEventListener('input', function(){
         var v = Number(fxEl.value)||0; state.fx = Math.max(0.0001, v);
-
-        // Con nuevo tipo de cambio, repinta carrito y catálogo
         renderCart();
         renderCatalog(CATALOG);
       });
