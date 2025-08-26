@@ -18,7 +18,7 @@
       --brand-dark:#2b2d33;
       --brand-gray:#9aa3ad;
       --brand-light:#f6f7fb;
-      --thumb-h: 320px; /* imágenes del catálogo más grandes */
+      --thumb-h: 320px;
     }
     html,body{ font-family:'Inter',system-ui,Segoe UI,Roboto,Helvetica,Arial; }
     .brand{ color:var(--brand); }
@@ -28,18 +28,14 @@
     .btn-brand:hover{ filter:brightness(.93); }
     .card{ border-radius:1rem; box-shadow:0 8px 18px rgba(0,0,0,.05); }
 
-    /* Logos UI */
     .brand-logo { width: 28px; height: 28px; object-fit: contain; }
     .brand-logo-lg { width: 36px; height: 36px; object-fit: contain; }
 
-    /* Imágenes catálogo (UI) */
     .prod-img{ width:100%; height:var(--thumb-h); background:#fff; border-radius:0.75rem; overflow:hidden; border:1px solid #eef2f7; }
     .prod-img img{ width:100%; height:100%; object-fit:contain; padding:10px; cursor:zoom-in; }
 
-    /* Imágenes en PDF — grandes */
     .pdf-prod-img{ width:150px; height:150px; object-fit:contain; border:1px solid #e5e7eb; border-radius:.5rem; }
 
-    /* Carrito (UI) */
     .cart-list .hdr{ display:none; }
     @media (min-width: 640px){
       .cart-list .hdr{
@@ -55,12 +51,10 @@
     .trash-btn{ color:#ef4444; display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:.5rem; }
     .trash-btn:hover{ background:#fee2e2; }
 
-    /* Chips de marcas (UI) */
     .brand-chip{ display:inline-flex; align-items:center; gap:.55rem; border:1px solid #e5e7eb; border-radius:9999px; padding:.6rem 1.05rem; cursor:pointer; user-select:none; font-size:1rem; }
     .brand-chip.active{ background:#fff0f5; border-color:var(--brand); color:var(--brand); }
     .brand-chip .count{ font-variant-numeric: tabular-nums; font-size:.9rem; color:#6b7280; }
 
-    /* Toasts */
     #toastStack{ position:fixed; top:16px; right:16px; z-index:60; display:flex; flex-direction:column; gap:10px; }
     .toast{ background:#111827; color:#fff; padding:10px 12px; border-radius:12px; box-shadow:0 10px 20px rgba(0,0,0,.18); display:flex; gap:8px; align-items:center; opacity:0; transform:translateY(-6px); transition:opacity .2s ease, transform .2s ease; font-size:.9rem; }
     .toast.show{ opacity:1; transform:translateY(0); }
@@ -68,7 +62,6 @@
     .toast.warn{ background:#92400e; }
     .toast.info{  background:#1f2937; }
 
-    /* Impresión: solo exportamos #pdfDoc */
     @media print{
       .no-print{ display:none !important; }
       body * { visibility:hidden; }
@@ -77,13 +70,11 @@
       .card{ box-shadow:none !important; border:1px solid #e5e7eb; }
     }
 
-    /* Banner de error JS */
     #jsErrorBanner{position:fixed;bottom:8px;left:8px;right:8px;background:#b91c1c;color:#fff;padding:10px 12px;border-radius:10px;z-index:70;box-shadow:0 10px 20px rgba(0,0,0,.25);font-size:.9rem;}
   </style>
 </head>
 <body class="bg-[var(--brand-light)] text-[var(--brand-dark)] min-h-screen">
 
-  <!-- Barra superior -->
   <header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-neutral-200 no-print">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
       <img src="logo-mdc.png" onerror="this.src='mdc digital color.png'" alt="MDC DIGITAL" class="h-10 w-auto" />
@@ -99,7 +90,6 @@
     <div class="brand-bg h-1 w-full"></div>
   </header>
 
-  <!-- Pantalla: filtros + catálogo -->
   <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
     <section class="lg:col-span-2 space-y-4">
       <!-- Filtros -->
@@ -125,7 +115,7 @@
         <div id="brandChips" class="flex flex-wrap gap-2"></div>
       </div>
 
-      <!-- Catálogo (agrupado por marca) -->
+      <!-- Catálogo -->
       <div id="catalog"></div>
     </section>
 
@@ -133,6 +123,13 @@
     <aside class="space-y-4 print:space-y-2">
       <div id="summaryCard" class="card bg-white p-4">
         <h2 class="font-semibold mb-2">Resumen</h2>
+
+        <!-- A nombre de -->
+        <div class="mb-3">
+          <label for="quoteTo" class="text-sm block mb-1">A nombre de</label>
+          <input id="quoteTo" type="text" class="border rounded-xl px-3 py-2 w-full" placeholder="Ej. Laboratorio Dental XYZ">
+        </div>
+
         <div class="text-sm space-y-2">
           <div class="flex justify-between"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
 
@@ -153,6 +150,12 @@
             <span>Total</span><span id="total">$0.00</span>
           </div>
 
+          <!-- Enganche visible en resumen -->
+          <div class="flex justify-between items-center gap-2">
+            <span>Enganche actual (<span id="downPctNow">20%</span>)</span>
+            <span id="downAmtNow">$0.00</span>
+          </div>
+
           <!-- Modo internacional -->
           <div class="mt-2 grid grid-cols-1 gap-2">
             <label class="inline-flex items-center gap-2">
@@ -166,15 +169,13 @@
           </div>
         </div>
 
-        <!-- Carrito compacto -->
+        <!-- Carrito -->
         <div id="cartTable" class="mt-3 border-t pt-3 cart-list"></div>
       </div>
 
-      <!-- Financiamiento (con personalizado) -->
       <div class="card bg-white p-4">
         <h3 class="font-semibold mb-2">Financiamiento</h3>
 
-        <!-- Selector de enganche + personalizado -->
         <div class="grid md:grid-cols-2 gap-3 text-sm">
           <div class="flex items-center gap-2">
             <label class="whitespace-nowrap">Enganche:</label>
@@ -187,7 +188,6 @@
             </select>
           </div>
 
-          <!-- Campo visible solo si se elige "Personalizado" -->
           <div id="downCustomWrap" class="flex items-center gap-2 hidden">
             <input id="downPctCustom" type="number" min="20" max="100" step="1" value="20"
                    class="border rounded px-2 py-1 w-24">
@@ -196,7 +196,6 @@
           </div>
         </div>
 
-        <!-- Cuadros con mensualidades -->
         <div class="grid grid-cols-2 gap-2 text-sm mt-3" id="finTable"></div>
       </div>
 
@@ -220,6 +219,13 @@
         <div><span class="brand-gray">Vigencia:</span> <span id="pdfValidUntil" class="font-semibold"></span></div>
       </div>
     </div>
+
+    <!-- Para / A nombre de -->
+    <div id="pdfForRow" class="mt-3 text-sm" style="display:none;">
+      <span class="brand-gray">A nombre de:</span>
+      <span id="pdfFor" class="font-medium"></span>
+    </div>
+
     <div class="brand-bg h-0.5 w-full my-4"></div>
 
     <h3 class="font-semibold mb-2">Productos seleccionados</h3>
@@ -253,6 +259,9 @@
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm" id="pdfFinTable"></div>
     </div>
 
+    <!-- Datos de contacto -->
+    <div class="mt-6 text-xs" id="pdfContact"></div>
+
     <div class="mt-6 text-xs brand-gray" id="pdfNotesBottom">
       <p>Las cotizaciones vencen al mes de generadas. Precios referenciales 2025; sujetos a cambio sin previo aviso. Entrega estimada según equipo. Fresadoras: instalación y capacitación presencial. Otros equipos: instalación y capacitación remota.</p>
     </div>
@@ -262,7 +271,7 @@
     © <span id="year"></span> MDC DIGITAL • Odontología Inteligente
   </footer>
 
-  <!-- Modal de imagen (UI) -->
+  <!-- Modal imagen -->
   <div id="imgModal" class="fixed inset-0 z-50 hidden no-print items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-labelledby="modalCaption">
     <div class="relative bg-white rounded-2xl shadow-xl max-w-3xl w-full">
       <button id="modalClose" class="absolute top-3 right-3 p-2 rounded-lg text-gray-500 hover:bg-gray-100" aria-label="Cerrar (Esc)">
@@ -275,10 +284,9 @@
     </div>
   </div>
 
-  <!-- Contenedor de toasts -->
   <div id="toastStack" class="no-print"></div>
 
-  <!-- Catálogo embebido (ACTUALIZADO) -->
+  <!-- Catálogo embebido -->
   <script id="catalogData" type="application/json">
   [
     {"sku":"RHINO-A51","name":"Fresadora RHINO A51 Seco","brand":"Rhino","category":"Fresadoras","unit_price":353970,"description":"5 ejes en seco, JAEGER, PANASONIC, cambiador automático."},
@@ -327,7 +335,7 @@
   </script>
 
   <script>
-    /* ===== Banner de errores JS ===== */
+    /* ===== Banner errores JS ===== */
     window.addEventListener('error', function(e){
       try{
         var old = document.getElementById('jsErrorBanner');
@@ -343,10 +351,17 @@
       /* ===== Parámetros ===== */
       var APR = 22;           // Interés anual (planes con interés)
       var IVA_PCT = 16;       // IVA fijo
-      var INCLUDE_PDF_IMAGES = true; // Mostrar imágenes en PDF
-      var MAX_QTY_PER_PRODUCT = 10;  // Máximo 10 unidades por producto
+      var INCLUDE_PDF_IMAGES = true;
+      var MAX_QTY_PER_PRODUCT = 10;
 
-      /* Logos de marca (solo UI) */
+      /* Datos de contacto para el PDF (edítalos a tu gusto) */
+      var CONTACT = {
+        phone: "+52 55 0000 0000",
+        email: "ventas@mdcdigital.mx",
+        site:  "www.mdcdigital.mx",
+        address: "CDMX, México"
+      };
+
       var BRAND_LOGOS = {
         "Rhino": "images/brands/rhino.png",
         "imes-icore": "images/brands/imes-icore.png",
@@ -361,7 +376,6 @@
       function slug(s){ return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
       function brandLogoUrl(b){ return BRAND_LOGOS[b] || (b ? ('images/brands/' + slug(b) + '.png') : ''); }
 
-      /* Folio autoincrementable por mes */
       var FOLIO_START = 1;
       var CURRENT_FOLIO = null;
       function nextFolio() {
@@ -382,7 +396,6 @@
         return CURRENT_FOLIO;
       }
 
-      /* Toasts */
       function showToast(msg, type, timeout){
         if (type === undefined) type = 'info';
         if (timeout === undefined) timeout = 2400;
@@ -397,7 +410,6 @@
         return { close: close };
       }
 
-      /* Imágenes por SKU (oculto para el usuario) */
       function productImageCandidates(p){
         var c = [];
         if (p.image) c.push(p.image);
@@ -410,7 +422,6 @@
         img.onerror = next; next();
       }
 
-      /* Catálogo + estado */
       var CATALOG = JSON.parse(document.getElementById('catalogData').textContent);
       var selectedBrand = '';
       var state = { items: [], intl:false, fx:17.00 };
@@ -428,7 +439,6 @@
         return n;
       }
 
-      /* Enganche personalizado */
       function getDownPct(){
         var downSel = document.getElementById('downPct');
         var sel = downSel ? downSel.value : '0.2';
@@ -443,7 +453,6 @@
         return Number(sel || 0.2);
       }
 
-      /* Render UI */
       function refreshCategories(){
         var catSel = document.getElementById('category');
         var current = catSel.value || '';
@@ -459,6 +468,7 @@
         }
         for (var k=0;k<catSel.options.length;k++){ if (catSel.options[k].value===current){ catSel.value=current; break; } }
       }
+      function brandLogoUrlDyn(b){ return BRAND_LOGOS[b] || (b ? ('images/brands/' + slug(b) + '.png') : ''); }
       function refreshBrandChips(){
         var wrap = document.getElementById('brandChips');
         var counts = {};
@@ -474,7 +484,7 @@
         for (var j=0;j<brands.length;j++){
           var bname = brands[j];
           html += '<button class="brand-chip '+(selectedBrand===bname?'active':'')+'" data-brand="'+bname+'">'
-               +  '<img src="'+brandLogoUrl(bname)+'" alt="'+bname+'" class="brand-logo" onerror="this.style.display=\'none\'">'
+               +  '<img src="'+brandLogoUrlDyn(bname)+'" alt="'+bname+'" class="brand-logo" onerror="this.style.display=\'none\'">'
                +  '<span>'+(bname || 'Sin marca')+'</span>'
                +  '<span class="count">('+(counts[bname])+')</span>'
                +  '</button>';
@@ -513,7 +523,7 @@
               + '<article class="card bg-white p-4 flex flex-col gap-3">'
               + '  <div class="prod-img"><img class="prod-img-el" alt="'+p.name.replace(/"/g,'&quot;')+'" data-sku="'+p.sku+'"></div>'
               + '  <div class="flex items-center gap-2">'
-              + '    <img src="'+brandLogoUrl(p.brand)+'" alt="'+p.brand+'" class="brand-logo" onerror="this.style.display=\'none\'">'
+              + '    <img src="'+brandLogoUrlDyn(p.brand)+'" alt="'+p.brand+'" class="brand-logo" onerror="this.style.display=\'none\'">'
               + '    <h3 class="font-semibold leading-tight">'+p.name+'</h3>'
               + '  </div>'
               + '  <div class="text-xs brand-gray">'+p.category+' • '+(p.brand || 'Sin marca')+'</div>'
@@ -528,7 +538,7 @@
           html += ''
             + '<section class="mb-6">'
             + '  <div class="flex items-center gap-2 mb-2">'
-            + '    <img src="'+brandLogoUrl(brand)+'" alt="'+brand+'" class="brand-logo-lg" onerror="this.style.display=\'none\'">'
+            + '    <img src="'+brandLogoUrlDyn(brand)+'" alt="'+brand+'" class="brand-logo-lg" onerror="this.style.display=\'none\'">'
             + '    <h4 class="text-base uppercase tracking-wide brand-gray">Marca: <span class="text-[var(--brand-dark)] font-semibold">'+brand+'</span></h4>'
             + '  </div>'
             + '  <div class="grid md:grid-cols-2 gap-4">'+itemsHtml+'</div>'
@@ -580,7 +590,6 @@
         renderCatalog(list);
       }
 
-      /* Carrito */
       function addItem(p, qty){
         if (!p) return;
         var add = clampQty(qty);
@@ -633,6 +642,11 @@
         document.getElementById('discountAmt').textContent= '-' + money(discountAmt);
         document.getElementById('ivaAmt').textContent     = money(ivaAmt);
         document.getElementById('total').textContent      = money(total);
+
+        // Enganche visible en la tarjeta (monto + %)
+        var dp = getDownPct();
+        document.getElementById('downAmtNow').textContent = money(total * dp);
+        document.getElementById('downPctNow').textContent = Math.round(dp*100) + '%';
       }
 
       function renderCart(){
@@ -672,13 +686,13 @@
         renderPDF();
       }
 
-      /* === Helpers para PDF === */
+      /* Helpers PDF */
       function waitForImages(el){
         var imgs = el.querySelectorAll('img');
         var list = [];
         for (var i=0;i<imgs.length;i++){
           var img = imgs[i];
-          if (img.complete) { /* ya está */ }
+          if (img.complete) { /* listo */ }
           else {
             list.push(new Promise(function(res){ img.onload = img.onerror = function(){ res(); }; }));
           }
@@ -687,7 +701,6 @@
       }
       function delay(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
 
-      /* PDF */
       function renderPDF(forceShow){
         if (forceShow === undefined) forceShow = false;
         var doc = document.getElementById('pdfDoc');
@@ -700,6 +713,18 @@
         document.getElementById('pdfValidUntil').textContent = v.toLocaleDateString('es-MX');
 
         document.getElementById('pdfPriceHeader').textContent = 'Precio ('+currencyCode()+')';
+
+        // A nombre de
+        var toVal = (document.getElementById('quoteTo').value || '').trim();
+        var forRow = document.getElementById('pdfForRow');
+        var forSpan= document.getElementById('pdfFor');
+        if (toVal){
+          forSpan.textContent = toVal;
+          forRow.style.display = 'block';
+        } else {
+          forRow.style.display = 'none';
+          forSpan.textContent = '';
+        }
 
         var body = document.getElementById('pdfItemsBody');
         if (!state.items.length){
@@ -749,7 +774,6 @@
         document.getElementById('pdfIva').textContent      = money(ivaAmt);
         document.getElementById('pdfTotal').textContent    = money(total);
 
-        /* Enganche (predeterminado o personalizado) */
         var downPct = getDownPct();
         var downAmt = total*downPct;
         var financed = Math.max(0, total - downAmt);
@@ -763,7 +787,7 @@
           plansHtml += '<div class="border rounded-xl p-2"><div class="text-xs brand-gray">'+term+' meses</div><div class="font-semibold">'+ money(payAmortized(financed, APR, term)) +'</div></div>';
         }
 
-        /* 1/3 enganche + 12 MSI (0% interés) */
+        // 1/3 + 12 MSI (0% interés)
         var msiDownPct = 1/3;
         var msiDownAmt = total * msiDownPct;
         var msiMonthly = (total - msiDownAmt) / 12;
@@ -772,7 +796,7 @@
         document.getElementById('pdfFinTable').innerHTML = plansHtml + msiHtml;
         document.getElementById('finTable').innerHTML    = plansHtml + msiHtml;
 
-        /* Notas instalación/capacitación */
+        // Instalación/capacitación
         var hasMills  = false, hasOthers = false;
         for (var q=0;q<state.items.length;q++){
           if ((state.items[q].category || '') === 'Fresadoras') hasMills = true; else hasOthers = true;
@@ -790,9 +814,15 @@
           ? '<p>Las cotizaciones vencen al mes de generadas. Precios referenciales 2025; sujetos a cambio sin previo aviso. Entrega estimada según equipo. Operación internacional en USD sin IVA. '+ instNote +'</p>'
           : '<p>Las cotizaciones vencen al mes de generadas. Precios referenciales 2025; sujetos a cambio sin previo aviso. Entrega estimada según equipo. '+ instNote +'</p>';
         document.getElementById('pdfNotesBottom').innerHTML = bottom;
+
+        // Datos de contacto
+        var contactHtml = '<p class="text-gray-700"><span class="font-semibold">Contacto</span><br>'
+                        + 'Tel: +52 1 33 2833 7758'+ CONTACT.phone +' · Correo: cadcam@dental.com.mx '+ CONTACT.email +'<br>'
+                        + ' · Dirección: Industria del Plastico #2113, Zapopan, Jal, México'+ CONTACT.address +'</p>';
+        document.getElementById('pdfContact').innerHTML = contactHtml;
       }
 
-      /* Modal imagen */
+      // Modal imagen
       var modalEl = document.getElementById('imgModal');
       var modalImg = document.getElementById('modalImg');
       var modalCap = document.getElementById('modalCaption');
@@ -815,7 +845,7 @@
       modalCloseBtn.addEventListener('click', closeModal);
       window.addEventListener('keydown', function(e){ if (!modalEl.classList.contains('hidden') && e.key === 'Escape') closeModal(); });
 
-      /* Eventos UI */
+      // Filtros
       document.getElementById('apply').addEventListener('click', applyFilters);
       document.getElementById('clear').addEventListener('click', function(){
         document.getElementById('q').value=''; document.getElementById('category').value='';
@@ -825,35 +855,25 @@
 
       document.getElementById('btnPrint').addEventListener('click', function(){ ensureFolio(); renderPDF(true); window.print(); });
 
-      /* === Descargar PDF (FIX: esperar imágenes y reflow) === */
+      // Descargar PDF (espera imágenes)
       document.getElementById('btnPDF').addEventListener('click', async function(){
         try{
           var pdfEl = document.getElementById('pdfDoc');
           ensureFolio();
           renderPDF(true);
-
-          // asegurar en viewport (evita capturas parciales)
           pdfEl.style.display = 'block';
           pdfEl.scrollIntoView({behavior:'auto', block:'start'});
-
-          // espera imágenes y un pequeño reflow
           await waitForImages(pdfEl);
           await delay(50);
-
           var opt = {
             margin: 10,
             filename: 'Cotizacion_' + document.getElementById('pdfFolio').textContent + '.pdf',
             image: { type:'jpeg', quality:0.98 },
             html2canvas: {
-              scale: 2,
-              useCORS: true,
-              allowTaint: true,
-              imageTimeout: 1500,
-              scrollY: -window.scrollY
+              scale: 2, useCORS: true, allowTaint: true, imageTimeout: 1500, scrollY: -window.scrollY
             },
             jsPDF: { unit:'mm', format:'a4', orientation:'portrait' }
           };
-
           await html2pdf().set(opt).from(pdfEl).save();
         }catch(err){
           console.error(err);
@@ -864,37 +884,35 @@
       document.getElementById('btnClearCart').addEventListener('click', function(){ state.items=[]; renderCart(); showToast('Carrito vacío.','info',1200); });
       document.getElementById('discount').addEventListener('input', function(){ recalc(); renderPDF(); });
 
-      /* Enganche: predeterminado vs personalizado */
+      // Enganche selector/personalizado
       var downSel = document.getElementById('downPct');
       var downCustomWrap = document.getElementById('downCustomWrap');
       var downCustomInput = document.getElementById('downPctCustom');
-
       downSel.addEventListener('change', function(){
         var isCustom = downSel.value === 'custom';
         downCustomWrap.classList.toggle('hidden', !isCustom);
-        renderPDF();
+        recalc(); renderPDF();
       });
-      downCustomInput.addEventListener('input', function(){ renderPDF(); });
+      downCustomInput.addEventListener('input', function(){ recalc(); renderPDF(); });
 
-      /* Internacional */
+      // Internacional
       var intlEl = document.getElementById('intl'); var fxEl = document.getElementById('fx'); var fxWrap = document.getElementById('fxWrap');
       intlEl.addEventListener('change', function(){
         state.intl = !!intlEl.checked;
         fxWrap.classList.toggle('hidden', !state.intl);
-
-        // Re-pintar carrito y catálogo (actualiza precios inmediatamente)
-        renderCart();
+        renderCart(); // recalcula y repinta precios
         renderCatalog(CATALOG);
-
         showToast(state.intl ? 'Modo internacional (USD) activado.' : 'Modo MXN activado.','info',1400);
       });
       fxEl.addEventListener('input', function(){
         var v = Number(fxEl.value)||0; state.fx = Math.max(0.0001, v);
-        renderCart();
-        renderCatalog(CATALOG);
+        renderCart(); renderCatalog(CATALOG);
       });
 
-      /* Init render */
+      // “A nombre de”: refresca PDF live
+      document.getElementById('quoteTo').addEventListener('input', function(){ renderPDF(); });
+
+      // Init
       var d = new Date(); document.getElementById('year').textContent = String(d.getFullYear());
       refreshCategories();
       refreshBrandChips();
