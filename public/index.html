@@ -95,6 +95,12 @@
     page-break-inside: avoid; 
     break-inside: avoid; 
   }
+  /* Mantener bloques completos en una sola página */
+  #pdfDoc .keep-together{ break-inside: avoid; page-break-inside: avoid; }
+
+  /* Marcador de salto forzado que insertaremos por JS si no cabe */
+  #pdfDoc .pagebreak{ break-before: page; page-break-before: always; }
+
 }
 
     #jsErrorBanner{position:fixed;bottom:8px;left:8px;right:8px;background:#b91c1c;color:#fff;padding:10px 12px;border-radius:10px;z-index:70;box-shadow:0 10px 20px rgba(0,0,0,.25);font-size:.9rem;}
@@ -269,30 +275,30 @@
     </table>
 
     <div class="grid sm:grid-cols-2 gap-4 mt-4">
-      <div class="text-xs brand-gray" id="pdfNotesLeft">Moneda: MXN.</div>
-      <div class="border rounded-xl p-3">
-        <div class="flex justify-between text-sm"><span>Subtotal</span><span id="pdfSubtotal">$0.00</span></div>
-        <div class="flex justify-between text-sm"><span>Descuento</span><span id="pdfDiscount">-$0.00</span></div>
-        <div class="flex justify-between text-sm" id="pdfIvaRow"><span>IVA</span><span id="pdfIva">$0.00</span></div>
-        <div class="border-t mt-2 pt-2 flex justify-between font-semibold"><span>Total</span><span id="pdfTotal">$0.00</span></div>
-      </div>
+    <div class="text-xs brand-gray" id="pdfNotesLeft">Moneda: MXN.</div>
+    <div class="border rounded-xl p-3">
+      <div class="flex justify-between text-sm"><span>Subtotal</span><span id="pdfSubtotal">$0.00</span></div>
+      <div class="flex justify-between text-sm"><span>Descuento</span><span id="pdfDiscount">-$0.00</span></div>
+      <div class="flex justify-between text-sm" id="pdfIvaRow"><span>IVA</span><span id="pdfIva">$0.00</span></div>
+      <div class="border-t mt-2 pt-2 flex justify-between font-semibold"><span>Total</span><span id="pdfTotal">$0.00</span></div>
     </div>
+  </div>
 
-    <div class="mt-6">
-      <h3 class="font-semibold mb-2">Plan de financiamiento</h3>
-      <div class="text-sm mb-2">
-        Enganche (planes con interés): <span id="pdfDownPct">20%</span> · Monto: <span id="pdfDownAmt">$0.00</span>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm" id="pdfFinTable"></div>
+  <!-- === Plan de financiamiento (junto) === -->
+  <section id="pdfFinBlock" class="keep-together mt-6">
+    <h3 class="font-semibold mb-2">Plan de financiamiento</h3>
+    <div class="text-sm mb-2">
+      Enganche (planes con interés): <span id="pdfDownPct">20%</span> · Monto: <span id="pdfDownAmt">$0.00</span>
     </div>
-
-    <!-- Datos de contacto -->
-    <div class="mt-6 text-xs" id="pdfContact"></div>
-
-    <div class="mt-6 text-xs brand-gray" id="pdfNotesBottom">
-      <p>Las cotizaciones vencen al mes de generadas. Precios referenciales 2025; sujetos a cambio sin previo aviso. Entrega estimada según equipo. Fresadoras: instalación y capacitación presencial. Otros equipos: instalación y capacitación remota.</p>
-    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm" id="pdfFinTable"></div>
   </section>
+
+  <!-- === Contacto + notas (junto) === -->
+  <section id="pdfContactBlock" class="keep-together">
+    <div class="mt-6 text-xs" id="pdfContact"></div>
+    <div class="mt-6 text-xs brand-gray" id="pdfNotesBottom"></div>
+  </section>
+</section> <!-- ← cierre de #pdfDoc -->
 
   <footer class="text-center text-xs brand-gray pb-8 no-print">
     © <span id="year"></span> MDC DIGITAL • Odontología Inteligente
@@ -517,7 +523,7 @@
       }
       function clampQty(v){
         var n = parseInt(v,10); if (isNaN(n)) n = 1;
-        if (n < 1) n = 1; if (n > 10) n = 10;
+        if (n < 1) n = 1; if (n > MAX_QTY_PER_PRODUCT) n = MAX_QTY_PER_PRODUCT;
         return n;
       }
 
@@ -617,7 +623,7 @@
               + '  <p class="text-sm">'+(p.description || '')+'</p>'
               + '  <div class="flex items-baseline gap-2 mt-1"><span class="text-lg font-semibold">'+ money(conv(p.unit_price)) +'</span><span class="text-xs brand-gray">('+currencyCode()+')</span></div>'
               + '  <div class="mt-2 flex gap-2">'
-              + '    <input type="number" min="1" max="10" value="1" class="border rounded px-2 py-1 w-20" id="qty-'+p.sku+'">'
+              + '    <input type="number" min="1" max="'+MAX_QTY_PER_PRODUCT+'" value="1" class="border rounded px-2 py-1 w-20" id="qty-'+p.sku+'">'
               + '    <button class="px-3 py-2 rounded-2xl btn-brand" data-sku="'+p.sku+'">Agregar</button>'
               + '  </div>'
               + '</article>';
@@ -660,7 +666,9 @@
             var qtyInput = document.getElementById('qty-'+sku);
             var raw = qtyInput ? qtyInput.value : '1';
             var qty = clampQty(raw);
-            if (parseInt(raw,10) > 10) showToast('Máximo 10 unidades por producto.','info');
+            if (parseInt(raw,10) > MAX_QTY_PER_PRODUCT) {
+              showToast('Máximo '+MAX_QTY_PER_PRODUCT+' unidades por producto.','info');
+            }
             addItem(p, qty);
           });
         }
@@ -692,9 +700,9 @@
           var wanted = ex.qty + add;
           var capped  = clampQty(wanted);
           if (capped === ex.qty) {
-            showToast('Máximo 10 unidades por producto.','info');
+            showToast('Máximo '+MAX_QTY_PER_PRODUCT+' unidades por producto.','info');
           } else if (capped < wanted) {
-            showToast('Se agregaron '+(capped - ex.qty)+' (tope 10).','info');
+            showToast('Se agregaron '+(capped - ex.qty)+' (tope '+MAX_QTY_PER_PRODUCT+').','info');
           } else {
             showToast('Cantidad actual: '+capped+'.','success',1500);
           }
@@ -715,8 +723,9 @@
         var newQty = clampQty(v);
         state.items[i].qty = newQty;
         renderCart();
-        if (parseInt(v,10) !== newQty) showToast('Máximo 10 unidades por producto.','info');
-        else if (newQty !== prev) showToast('Cantidad: '+newQty+'.','success',1200);
+        if (parseInt(v,10) !== newQty) {
+          showToast('Máximo '+MAX_QTY_PER_PRODUCT+' unidades por producto.','info');
+        } else if (newQty !== prev) showToast('Cantidad: '+newQty+'.','success',1200);
       }
       window.removeItem = removeItem; window.updateQty = updateQty;
 
@@ -763,7 +772,7 @@
             +   '<div class="cart-name col-span-2 sm:col-span-1">'+ it.name +'<div class="text-xs brand-gray sm:hidden mt-0.5">'+ money(conv(it.unit_price)) +'</div></div>'
             +   '<div class="cart-num hidden sm:block">'+ money(conv(it.unit_price)) +'</div>'
             +   '<div class="cart-num">'
-            +     '<input type="number" min="1" max="10" value="'+it.qty+'" class="border rounded px-2 py-1 cart-qty no-print" onchange="updateQty('+i+', this.value)">'
+            +     '<input type="number" min="1" max="'+MAX_QTY_PER_PRODUCT+'" value="'+it.qty+'" class="border rounded px-2 py-1 cart-qty no-print" onchange="updateQty('+i+', this.value)">'
             +   '</div>'
             +   '<div class="text-right">'
             +     '<button class="trash-btn no-print" title="Eliminar" aria-label="Eliminar" onclick="removeItem('+i+')">'
@@ -792,6 +801,33 @@
         }
         return Promise.all(list);
       }
+              function _pxPerMM(){ return 96/25.4; }                           // ≈3.78 px/mm
+        function _pageHeightPx(){ return (297 - 2*10) * _pxPerMM(); }     // A4 menos márgenes @page (10mm)
+        function _offsetWithin(el, ancestor){
+          var y = 0; while(el && el !== ancestor){ y += el.offsetTop; el = el.offsetParent; } return y;
+        }
+        function _removeAutoBreaks(){
+          document.querySelectorAll('#pdfDoc .pagebreak.__auto').forEach(n => n.remove());
+        }
+        function ensureNicePageBreaks(){
+          var doc = document.getElementById('pdfDoc');
+          if(!doc) return;
+          _removeAutoBreaks();
+          var pageH = _pageHeightPx(), fudge = 24; // colchón
+
+          ['pdfFinBlock','pdfContactBlock'].forEach(function(id){
+            var el = document.getElementById(id);
+            if(!el) return;
+            var top = _offsetWithin(el, doc);
+            var posInPage = top % pageH;
+            var h = el.offsetHeight;
+            if (posInPage + h > pageH - fudge){
+              var br = document.createElement('div');
+              br.className = 'pagebreak __auto';
+              el.parentNode.insertBefore(br, el);
+            }
+          });
+        }
       function delay(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
 
       function renderPDF(forceShow){
@@ -947,6 +983,7 @@
         };
       }
 
+
       // Filtros
       document.getElementById('apply').addEventListener('click', applyFilters);
       document.getElementById('clear').addEventListener('click', function(){
@@ -957,41 +994,27 @@
 
       document.getElementById('btnPrint').addEventListener('click', function(){ ensureFolio(); renderPDF(true); window.print(); });
 
-      // Descargar PDF (espera imágenes)
+      // Botón PDF
       document.getElementById('btnPDF').addEventListener('click', async function(){
         try{
           var pdfEl = document.getElementById('pdfDoc');
           ensureFolio();
           renderPDF(true);
-          pdfEl.style.display = 'block';
-          pdfEl.scrollIntoView({behavior:'auto', block:'start'});
           await waitForImages(pdfEl);
-          await delay(50);
+          ensureNicePageBreaks();   // 👈 aquí
+
           const opt = {
-            margin: 10, // debe coincidir con @page margin
+            margin: 10,
             filename: 'Cotizacion_' + document.getElementById('pdfFolio').textContent + '.pdf',
             image: { type:'jpeg', quality:0.98 },
-            html2canvas: {
-              scale: 2,
-              useCORS: true,
-              allowTaint: true,
-              imageTimeout: 1500,
-              scrollY: -window.scrollY
-            },
+            html2canvas: { scale: 2, useCORS: true, allowTaint: true, imageTimeout: 1500, scrollY: -window.scrollY },
             jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
-
-            // 👇 evita cortes usando CSS y reglas “legacy”
-            pagebreak: { 
-              mode: ['css','legacy'],
-              avoid: ['tr', '.pb-avoid']  // puedes aplicar .pb-avoid a bloques que no quieras partir
-            }
+            pagebreak: { mode: ['css','legacy'], avoid: ['tr','.keep-together'] }
           };
           await html2pdf().set(opt).from(pdfEl).save();
-        }catch(err){
-          console.error(err);
-          showToast('No se pudo generar el PDF. Revisa la consola.', 'warn', 2600);
-        }
+        }catch(err){ console.error(err); showToast('No se pudo generar el PDF. Revisa la consola.', 'warn', 2600); }
       });
+
 
       document.getElementById('btnClearCart').addEventListener('click', function(){ state.items=[]; renderCart(); showToast('Carrito vacío.','info',1200); });
       document.getElementById('discount').addEventListener('input', function(){ recalc(); renderPDF(); });
