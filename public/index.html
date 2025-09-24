@@ -62,13 +62,40 @@
     .toast.warn{ background:#92400e; }
     .toast.info{  background:#1f2937; }
 
-    @media print{
-      .no-print{ display:none !important; }
-      body * { visibility:hidden; }
-      #pdfDoc, #pdfDoc * { visibility:visible; }
-      #pdfDoc { position:relative; left:0; top:0; display:block !important; }
-      .card{ box-shadow:none !important; border:1px solid #e5e7eb; }
-    }
+    /* Márgenes “reales” del PDF/impresión */
+@page {
+  size: A4;
+  margin: 10mm; /* coordina con html2pdf margin */
+}
+
+/* Reglas de impresión: ocultamos wrappers y dejamos solo el PDF */
+@media print{
+  /* No uses visibility:hidden global; oculta wrappers completos */
+  header, main, footer, .no-print { display: none !important; }
+
+  /* Muestra el documento PDF sin sombras ni márgenes exteriores */
+  #pdfDoc{
+    display: block !important;
+    margin: 0 !important;           /* evita que la clase my-8 empuje a otra página */
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb;      /* opcional, igual que tus .card */
+  }
+
+  /* Tablas: evita cortes de filas y repite encabezado */
+  #pdfDoc table{ 
+    page-break-inside: auto; 
+    border-collapse: collapse;
+    width: 100%;
+  }
+  #pdfDoc thead{ display: table-header-group; } /* encabezado se repite */
+  #pdfDoc tfoot{ display: table-footer-group; } /* por si añades totales abajo */
+  #pdfDoc tr, 
+  #pdfDoc td, 
+  #pdfDoc th{ 
+    page-break-inside: avoid; 
+    break-inside: avoid; 
+  }
+}
 
     #jsErrorBanner{position:fixed;bottom:8px;left:8px;right:8px;background:#b91c1c;color:#fff;padding:10px 12px;border-radius:10px;z-index:70;box-shadow:0 10px 20px rgba(0,0,0,.25);font-size:.9rem;}
   </style>
@@ -164,7 +191,7 @@
             </label>
             <div id="fxWrap" class="flex items-center gap-2 ml-6 hidden">
               <span class="text-xs brand-gray">Tipo de cambio (MXN → USD):</span>
-              <input id="fx" type="number" step="0.01" min="0.0001" value="19.50" class="border rounded px-2 py-1 w-28">
+              <input id="fx" type="number" step="0.01" min="0.0001" value="19.00" class="border rounded px-2 py-1 w-28">
             </div>
           </div>
         </div>
@@ -475,7 +502,11 @@
 
       var CATALOG = JSON.parse(document.getElementById('catalogData').textContent);
       var selectedBrand = '';
-      var state = { items: [], intl:false, fx:17.00 };
+      // Después de declarar state...
+      var state = { items: [], intl:false, fx:19.00 };
+
+      // Añade inmediatamente:
+      state.fx = Number(document.getElementById('fx').value) || state.fx;
 
       function currencyCode(){ return state.intl ? 'USD' : 'MXN'; }
       function money(n){ return Number(n||0).toLocaleString(state.intl ? 'en-US' : 'es-MX', { style:'currency', currency: currencyCode() }); }
@@ -810,8 +841,8 @@
           var unit  = conv(it.unit_price);
           var amount= unit*it.qty;
           var imgHtml = INCLUDE_PDF_IMAGES
-            ? ('<img src="images/products/'+it.sku+'.png" class="pdf-prod-img" crossorigin="anonymous" onerror="this.style.display=\'none\'">')
-            : '';
+          ? ('<img src="images/products/'+it.sku+'.png" class="pdf-prod-img" crossorigin="anonymous" onerror="tryPdfImg(this, \''+it.sku+'\')">')
+          : '';
           rows += ''
             + '<tr class="border-b align-top">'
             +   '<td class="p-2"><div class="flex gap-3">'+ imgHtml +'<div><div class="font-medium">'+ it.name +'</div>'+ (desc ? ('<div class="text-xs text-gray-600 mt-1">'+ desc +'</div>') : '') +'</div></div></td>'
@@ -907,6 +938,15 @@
       modalCloseBtn.addEventListener('click', closeModal);
       window.addEventListener('keydown', function(e){ if (!modalEl.classList.contains('hidden') && e.key === 'Escape') closeModal(); });
 
+      function tryPdfImg(el, sku){
+        var exts = ['.png','.webp','.jpg','.PNG','.WEBP','.JPG'];
+        var i = 0;
+        el.onerror = function(){
+          if (i >= exts.length){ el.style.display='none'; return; }
+          el.src = 'images/products/' + sku + exts[i++];
+        };
+      }
+
       // Filtros
       document.getElementById('apply').addEventListener('click', applyFilters);
       document.getElementById('clear').addEventListener('click', function(){
@@ -927,14 +967,24 @@
           pdfEl.scrollIntoView({behavior:'auto', block:'start'});
           await waitForImages(pdfEl);
           await delay(50);
-          var opt = {
-            margin: 10,
+          const opt = {
+            margin: 10, // debe coincidir con @page margin
             filename: 'Cotizacion_' + document.getElementById('pdfFolio').textContent + '.pdf',
             image: { type:'jpeg', quality:0.98 },
             html2canvas: {
-              scale: 2, useCORS: true, allowTaint: true, imageTimeout: 1500, scrollY: -window.scrollY
+              scale: 2,
+              useCORS: true,
+              allowTaint: true,
+              imageTimeout: 1500,
+              scrollY: -window.scrollY
             },
-            jsPDF: { unit:'mm', format:'a4', orientation:'portrait' }
+            jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
+
+            // 👇 evita cortes usando CSS y reglas “legacy”
+            pagebreak: { 
+              mode: ['css','legacy'],
+              avoid: ['tr', '.pb-avoid']  // puedes aplicar .pb-avoid a bloques que no quieras partir
+            }
           };
           await html2pdf().set(opt).from(pdfEl).save();
         }catch(err){
