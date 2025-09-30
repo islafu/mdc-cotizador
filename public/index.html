@@ -118,6 +118,8 @@
       <div class="ml-auto flex items-center gap-2">
         <button id="btnPDF" class="btn-brand px-4 py-2 rounded-2xl shadow">Descargar PDF</button>
         <button id="btnPrint" class="px-4 py-2 rounded-2xl border border-[var(--brand)] text-[var(--brand)]">Imprimir</button>
+        <!-- 👇 nuevo -->
+        <button id="managerBtn" class="px-4 py-2 rounded-2xl border border-slate-400 text-slate-700">Modo gerente 🔒</button>
       </div>
     </div>
     <div class="brand-bg h-1 w-full"></div>
@@ -202,6 +204,26 @@
           </div>
         </div>
 
+                <!-- Ajustes finales (modo gerente) -->
+        <div id="managerAdjustWrap" class="mt-3 border-t pt-3 hidden">
+          <h4 class="font-semibold text-sm mb-2">Ajustes finales</h4>
+          <div class="grid sm:grid-cols-3 gap-2 text-sm">
+            <label class="flex items-center justify-between gap-2">
+              <span>Descuento adicional (%)</span>
+              <input id="mgrExtraPct" type="number" step="0.1" min="0" value="0" class="border rounded px-2 py-1 w-24 text-right">
+            </label>
+            <label class="flex items-center justify-between gap-2">
+              <span>Redondeo (±)</span>
+              <input id="mgrRound" type="number" step="1" value="0" class="border rounded px-2 py-1 w-24 text-right">
+            </label>
+            <label class="flex items-center justify-between gap-2">
+              <span>Total forzado</span>
+              <input id="mgrForceTotal" type="number" step="0.01" min="0" placeholder="" class="border rounded px-2 py-1 w-32 text-right">
+            </label>
+          </div>
+          <p class="text-xs brand-gray mt-1">Si “Total forzado” tiene un valor, ignora descuento adicional y redondeo.</p>
+        </div>
+
         <!-- Carrito -->
         <div id="cartTable" class="mt-3 border-t pt-3 cart-list"></div>
       </div>
@@ -281,6 +303,7 @@
       <div class="flex justify-between text-sm"><span>Descuento</span><span id="pdfDiscount">-$0.00</span></div>
       <div class="flex justify-between text-sm" id="pdfIvaRow"><span>IVA</span><span id="pdfIva">$0.00</span></div>
       <div class="border-t mt-2 pt-2 flex justify-between font-semibold"><span>Total</span><span id="pdfTotal">$0.00</span></div>
+      <div id="pdfAdjustNote" class="text-xs text-gray-600 mt-2" style="display:none"></div>
     </div>
   </div>
 
@@ -353,7 +376,7 @@
     {"sku":"SPRY-MIDAS","name":"IMPRESORA 3D SprintRay MIDAS","brand":"SprintRay","category":"Impresoras 3D","unit_price":222092,"description":"DPS, Prensa Digital, Coronas Definitivas en 10 min."},
     {"sku":"SPRY-NANCUR","name":"Horno de Curado SprintRay Nano Cure","brand":"SprintRay","category":"Impresoras 3D","unit_price":72698,"description":"Velocidad, Distintas longitudes de onda, amplia gama de materiales."},
     {"sku":"SPRY-PROWASHS","name":"Unidad de Lavado ProWash S","brand":"SprintRay","category":"Impresoras 3D","unit_price":66638,"description":"Lavado eficiente sin sumergir, compatible con múltiples materiales."},
-    {"sku":"SPRY-PROCURE2","name":"Horno de Curado SprintRay PROCure 2 ","brand":"SprintRay","category":"Impresoras 3D","unit_price":102000,"description":"Exploracion de Camara, Calentamiento Instantaneo, Termodinamica Activa."},
+
 
     {"sku":"SOFT-HDEXP-SEC","name":"hyperDENT Express Seco 5X","brand":"hyperDENT","category":"Software","unit_price":66602,"description":"CAM dental ideal para maquinas Rhino en Seco."},
     {"sku":"SOFT-HDEXP-HUM","name":"hyperDENT Express Humedo 4X","brand":"hyperDENT","category":"Software","unit_price":42329,"description":"CAM dental ideal para maquinas Rhino en Humedo."},
@@ -407,6 +430,32 @@
   </script>
 
   <script>
+
+    // ===== MODO GERENTE =====
+    var MANAGER_HASH = "a3d6d2f9c9e9f7f2f3a1bb3d9d8c7b6a39c8d1f0f7ea8b3d1c0a9e8f7d6c5b4"; 
+    // ^^^ Reemplaza por el SHA-256 de tu contraseña (en hex). Ejemplo: de "mdc2025!" (cámbiala).
+
+    var isManager = false;
+    // por SKU: { price?: number, gift?: boolean }
+    var managerOverrides = {}; 
+    // ajustes finales
+    var managerFinal = { extraPct: 0, round: 0, forceTotal: null };
+
+    async function sha256Hex(str){
+      const enc = new TextEncoder().encode(str);
+      const buf = await crypto.subtle.digest('SHA-256', enc);
+      const arr = Array.from(new Uint8Array(buf));
+      return arr.map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+    function fmt(n){ return money(n); } // alias breve
+    function effectiveUnit(sku, base){
+      const ov = managerOverrides[sku];
+      if (!ov) return base;
+      if (ov.gift) return 0;
+      if (typeof ov.price === 'number' && !isNaN(ov.price)) return ov.price;
+      return base;
+    }
+
     /* ===== Banner errores JS ===== */
     window.addEventListener('error', function(e){
       try{
@@ -457,6 +506,49 @@
         "KDF": "images/brands/kdf.png",
         "SprintRay": "images/brands/SprintRay.png"
       };
+
+      document.getElementById('managerBtn').addEventListener('click', async function(){
+      if (!isManager){
+        const pwd = prompt('Contraseña de gerente:');
+        if (pwd == null) return;
+        try{
+          const hex = await sha256Hex(pwd);
+          if (hex === MANAGER_HASH){
+            isManager = true;
+            document.getElementById('managerBtn').textContent = 'Modo gerente ✅';
+            document.getElementById('managerBtn').className = 'px-4 py-2 rounded-2xl border border-green-600 text-green-700';
+            document.getElementById('managerAdjustWrap').classList.remove('hidden');
+            showToast('Modo gerente activado.', 'success');
+            renderCart(); // para dibujar inputs extras
+            renderPDF();
+          }else{
+            showToast('Contraseña incorrecta.', 'warn', 1800);
+          }
+        }catch(_){ showToast('No disponible en este navegador.', 'warn'); }
+      }else{
+        // bloquear de nuevo
+        isManager = false;
+        document.getElementById('managerBtn').textContent = 'Modo gerente 🔒';
+        document.getElementById('managerBtn').className = 'px-4 py-2 rounded-2xl border border-slate-400 text-slate-700';
+        document.getElementById('managerAdjustWrap').classList.add('hidden');
+        managerOverrides = {};
+        managerFinal = { extraPct:0, round:0, forceTotal:null };
+        renderCart(); renderPDF();
+        showToast('Modo gerente desactivado.', 'info');
+      }
+    });
+
+    // listeners de ajustes finales
+    ['mgrExtraPct','mgrRound','mgrForceTotal'].forEach(function(id){
+      var el = document.getElementById(id);
+      el.addEventListener('input', function(){
+        managerFinal.extraPct = Math.max(0, Number(document.getElementById('mgrExtraPct').value)||0);
+        managerFinal.round    = Number(document.getElementById('mgrRound').value)||0;
+        var f = document.getElementById('mgrForceTotal').value;
+        managerFinal.forceTotal = (f===''? null : Math.max(0, Number(f)));
+        recalc(); renderPDF();
+      });
+    });
 
       /* === Cache-busting + fallbacks de logos de marca === */
       var ASSET_VERSION = '2025-08-28-2';
@@ -768,63 +860,149 @@
       window.removeItem = removeItem; window.updateQty = updateQty;
 
       function recalc(){
+        // 1) Subtotal base de líneas (con overrides/gift)
         var subtotalMXN = 0;
-        for (var i=0;i<state.items.length;i++){ subtotalMXN += state.items[i].unit_price*state.items[i].qty; }
-        var subtotal    = conv(subtotalMXN);
+        for (var i=0;i<state.items.length;i++){
+          var baseUnitMXN = state.items[i].unit_price;         // MXN base
+          var baseUnitConv = conv(baseUnitMXN);                 // a moneda actual
+          var effU = effectiveUnit(state.items[i].sku, baseUnitConv);
+          subtotalMXN += (state.items[i].qty * (state.intl ? effU*state.fx : effU)); 
+        }
+        // ^^ subtotalMXN reconstituido en MXN para IVA consistente
+        var subtotal = conv(subtotalMXN);
+
         var discountPct = Math.max(0, Number(document.getElementById('discount').value)||0);
-        var discountAmt = subtotal*discountPct/100;
+        var discountAmt = subtotal * discountPct / 100;
         var base        = subtotal - discountAmt;
         var ivaAmt      = state.intl ? 0 : base*IVA_PCT/100;
-        var total       = base + ivaAmt;
+        var preTotal    = base + ivaAmt;
 
+        // 2) Ajustes finales (modo gerente)
+        var finalTotal = preTotal;
+        var adjustNote = [];
+
+        if (isManager){
+          if (managerFinal.forceTotal != null){
+            finalTotal = managerFinal.forceTotal;
+            adjustNote.push('Total forzado.');
+          }else{
+            if (managerFinal.extraPct > 0){
+              var extra = finalTotal * (managerFinal.extraPct/100);
+              finalTotal -= extra;
+              adjustNote.push('Descuento adicional '+managerFinal.extraPct.toFixed(1)+'%');
+            }
+            if (managerFinal.round !== 0){
+              finalTotal += managerFinal.round;
+              adjustNote.push('Redondeo '+(managerFinal.round>0?'+':'')+managerFinal.round.toFixed(2));
+            }
+          }
+        }
+
+        // Pintar
         document.getElementById('ivaRow').style.display = state.intl ? 'none' : 'flex';
-        document.getElementById('subtotal').textContent   = money(subtotal);
-        document.getElementById('discountAmt').textContent= '-' + money(discountAmt);
-        document.getElementById('ivaAmt').textContent     = money(ivaAmt);
-        document.getElementById('total').textContent      = money(total);
+        document.getElementById('subtotal').textContent   = fmt(subtotal);
+        document.getElementById('discountAmt').textContent= '-' + fmt(discountAmt);
+        document.getElementById('ivaAmt').textContent     = fmt(ivaAmt);
+        document.getElementById('total').textContent      = fmt(finalTotal);
 
-        // Enganche visible en la tarjeta (monto + %)
+        // Enganche visible
         var dp = getDownPct();
-        document.getElementById('downAmtNow').textContent = money(total * dp);
+        document.getElementById('downAmtNow').textContent = fmt(finalTotal * dp);
         document.getElementById('downPctNow').textContent = Math.round(dp*100) + '%';
+
+        // Guarda total calculado para PDF
+        recalc._lastFinalTotal = finalTotal;
+        recalc._lastPreTotal   = preTotal;
+        recalc._lastAdjustNote = adjustNote.join(' · ');
       }
 
-      function renderCart(){
-        var wrap = document.getElementById('cartTable');
-        if (!state.items.length){
-          wrap.innerHTML = '<p class="text-sm brand-gray">Tu carrito está vacío.</p>';
-          recalc(); renderPDF(); return;
-        }
-        var header = ''
-          + '<div class="hdr">'
-          + '  <div>Descripción</div>'
-          + '  <div class="text-right">Precio</div>'
-          + '  <div class="text-right">Cant</div>'
-          + '  <div class="text-right"> </div>'
-          + '</div>';
-        var rows = '';
-        for (var i=0;i<state.items.length;i++){
-          var it = state.items[i];
+function renderCart(){
+  var wrap = document.getElementById('cartTable');
+  if (!state.items.length){
+    wrap.innerHTML = '<p class="text-sm brand-gray">Tu carrito está vacío.</p>';
+    recalc(); renderPDF(); 
+    return;
+  }
+
+  var header = ''
+    + '<div class="hdr">'
+    + '  <div>Descripción</div>'
+    + '  <div class="text-right">Precio</div>'
+    + '  <div class="text-right">Cant</div>'
+    + '  <div class="text-right"> </div>'
+    + '</div>';
+
+  var rows = '';
+  for (var i=0;i<state.items.length;i++){
+    var it = state.items[i];
+    var baseUnit = conv(it.unit_price);
+    var effUnit  = effectiveUnit(it.sku, baseUnit);
+
+    rows += ''
+      + '<div class="row">'
+      +   '<div class="cart-name col-span-2 sm:col-span-1">'
+      +      it.name
+      +      '<div class="text-xs brand-gray sm:hidden mt-0.5">'
+      +         fmt(baseUnit) + (effUnit!==baseUnit ? ' → ' + fmt(effUnit) : '')
+      +      '</div>'
+      +   '</div>'
+
+      +   '<div class="cart-num hidden sm:block">'
+      +      fmt(baseUnit)
+      +      (effUnit!==baseUnit ? '<div class="text-xs text-green-700">→ '+fmt(effUnit)+'</div>' : '')
+      +   '</div>'
+
+      +   '<div class="cart-num">'
+      +     '<input type="number" min="1" max="'+MAX_QTY_PER_PRODUCT+'" value="'+it.qty+'" '
+      +       'class="border rounded px-2 py-1 cart-qty no-print" '
+      +       'onchange="updateQty('+i+', this.value)">'
+      +   '</div>'
+
+      +   '<div class="text-right">';
+        if (isManager){
+          var ov = managerOverrides[it.sku] || {};
           rows += ''
-            + '<div class="row">'
-            +   '<div class="cart-name col-span-2 sm:col-span-1">'+ it.name +'<div class="text-xs brand-gray sm:hidden mt-0.5">'+ money(conv(it.unit_price)) +'</div></div>'
-            +   '<div class="cart-num hidden sm:block">'+ money(conv(it.unit_price)) +'</div>'
-            +   '<div class="cart-num">'
-            +     '<input type="number" min="1" max="'+MAX_QTY_PER_PRODUCT+'" value="'+it.qty+'" class="border rounded px-2 py-1 cart-qty no-print" onchange="updateQty('+i+', this.value)">'
-            +   '</div>'
-            +   '<div class="text-right">'
-            +     '<button class="trash-btn no-print" title="Eliminar" aria-label="Eliminar" onclick="removeItem('+i+')">'
-            +       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">'
-            +         '<path d="M9 3a1 1 0 0 0-1 1v1H5.5a1 1 0 1 0 0 2H6v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7h.5a1 1 0 1 0 0-2H16V4a1 1 0 0 0-1-1H9zm2 3h2V5h-2v1zm-1 4a1 1 0 0 1 2 0v8a1 1 0 1 1-2 0V10zm5 0a1 1 0 0 1 2 0v8a1 1 0 1 1-2 0V10z"/>'
-            +       '</svg>'
-            +     '</button>'
-            +   '</div>'
-            + '</div>';
+            + '<div class="flex flex-col items-end gap-1">'
+            +   '<label class="text-xs text-gray-600">Override $/u'
+            +     '<input type="number" step="0.01" min="0" value="'+(ov.price!=null?ov.price:'')+'" '
+            +       'class="mt-1 border rounded px-2 py-1 w-28 text-right" '
+            +       'oninput="setOverridePrice(\''+it.sku+'\', this.value)">'
+            +   '</label>'
+            +   '<label class="text-xs inline-flex items-center gap-1">'
+            +     '<input type="checkbox" '+(ov.gift?'checked':'')+' '
+            +       'onchange="toggleGift(\''+it.sku+'\', this.checked)"> Cortesía'
+            +   '</label>';
         }
-        wrap.innerHTML = header + rows;
-        recalc();
-        renderPDF();
-      }
+        rows += ''
+            +   '<button class="trash-btn no-print" title="Eliminar" aria-label="Eliminar" onclick="removeItem('+i+')">'
+            +     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">'
+            +       '<path d="M9 3a1 1 0 0 0-1 1v1H5.5a1 1 0 1 0 0 2H6v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7h.5a1 1 0 1 0 0-2H16V4a1 1 0 0 0-1-1H9zm2 3h2V5h-2v1zm-1 4a1 1 0 0 1 2 0v8a1 1 0 1 1-2 0V10zm5 0a1 1 0 0 1 2 0v8a1 1 0 1 1-2 0V10z"/>'
+            +     '</svg>'
+            +   '</button>'
+            + (isManager ? '</div>' : '')
+      +   '</div>'
+      + '</div>';
+  }
+
+  wrap.innerHTML = header + rows;
+
+  // Handlers manager
+  window.setOverridePrice = function(sku, val){
+    managerOverrides[sku] = managerOverrides[sku] || {};
+    if (val === '' || val == null){ delete managerOverrides[sku].price; }
+    else { managerOverrides[sku].price = Math.max(0, Number(val)||0); }
+    recalc(); renderPDF();
+  };
+  window.toggleGift = function(sku, checked){
+    managerOverrides[sku] = managerOverrides[sku] || {};
+    managerOverrides[sku].gift = !!checked;
+    recalc(); renderPDF();
+  };
+
+  recalc();
+  renderPDF();
+}
+
 
       /* Helpers PDF */
       function waitForImages(el){
@@ -912,38 +1090,70 @@
           var catItem = null;
           for (var x=0;x<CATALOG.length;x++){ if (CATALOG[x].sku===it.sku){ catItem = CATALOG[x]; break; } }
           var desc = (catItem && catItem.description) ? catItem.description : '';
-          var unit  = conv(it.unit_price);
-          var amount= unit*it.qty;
+
+          var unitBase = conv(catItem ? catItem.unit_price : it.unit_price);
+          var unitEff  = effectiveUnit(it.sku, unitBase);
+          var amount   = unitEff * it.qty;
+
           var imgHtml = INCLUDE_PDF_IMAGES
-          ? ('<img src="images/products/'+it.sku+'.png" class="pdf-prod-img" crossorigin="anonymous" onerror="tryPdfImg(this, \''+it.sku+'\')">')
-          : '';
+            ? ('<img src="images/products/'+it.sku+'.png" class="pdf-prod-img" crossorigin="anonymous" onerror="tryPdfImg(this, \''+it.sku+'\')">')
+            : '';
+
+          var unitNote = (unitEff!==unitBase)
+            ? '<div class="text-[10px] text-green-700 mt-0.5">Antes: '+fmt(unitBase)+' → Ahora: '+fmt(unitEff) + (managerOverrides[it.sku] && managerOverrides[it.sku].gift ? ' (cortesía)' : '') +'</div>'
+            : '';
+
           rows += ''
             + '<tr class="border-b align-top">'
-            +   '<td class="p-2"><div class="flex gap-3">'+ imgHtml +'<div><div class="font-medium">'+ it.name +'</div>'+ (desc ? ('<div class="text-xs text-gray-600 mt-1">'+ desc +'</div>') : '') +'</div></div></td>'
-            +   '<td class="p-2 text-right">'+ money(unit) +'</td>'
+            +   '<td class="p-2"><div class="flex gap-3">'+ imgHtml +'<div><div class="font-medium">'+ it.name +'</div>'+ (desc ? ('<div class="text-xs text-gray-600 mt-1">'+ desc +'</div>') : '') + unitNote +'</div></div></td>'
+            +   '<td class="p-2 text-right">'+ fmt(unitEff) +'</td>'
             +   '<td class="p-2 text-right">'+ it.qty +'</td>'
-            +   '<td class="p-2 text-right">'+ money(amount) +'</td>'
+            +   '<td class="p-2 text-right">'+ fmt(amount) +'</td>'
             + '</tr>';
         }
         body.innerHTML = rows;
 
-        var subtotalMXN = 0; for (var s=0;s<state.items.length;s++){ subtotalMXN += state.items[s].unit_price*state.items[s].qty; }
-        var subtotal    = conv(subtotalMXN);
+
+        // --- Totales coherentes con recalc()
+        var subtotalMXN = 0;
+        for (var s=0;s<state.items.length;s++){
+          var baseUnitMXN = state.items[s].unit_price;
+          var effU = effectiveUnit(state.items[s].sku, conv(baseUnitMXN));
+          subtotalMXN += state.items[s].qty * (state.intl ? effU*state.fx : effU);
+        }
+        var subtotal = conv(subtotalMXN);
         var discountPct = Math.max(0, Number(document.getElementById('discount').value)||0);
-        var discountAmt = subtotal*discountPct/100;
-        var base        = subtotal - discountAmt;
-        var ivaAmt      = state.intl ? 0 : base*IVA_PCT/100;
-        var total       = base + ivaAmt;
+        var discountAmt = subtotal * discountPct / 100;
+        var base = subtotal - discountAmt;
+        var ivaAmt = state.intl ? 0 : base*IVA_PCT/100;
+        var preTotal = base + ivaAmt;
+
+        // Ajustes finales
+        var finalTotal = preTotal, pdfAdjust = [];
+        if (isManager){
+          if (managerFinal.forceTotal != null){
+            finalTotal = managerFinal.forceTotal; pdfAdjust.push('Total forzado');
+          }else{
+            if (managerFinal.extraPct>0){ finalTotal -= finalTotal*(managerFinal.extraPct/100); pdfAdjust.push('Desc. adicional '+managerFinal.extraPct.toFixed(1)+'%'); }
+            if (managerFinal.round!==0){ finalTotal += managerFinal.round; pdfAdjust.push('Redondeo '+(managerFinal.round>0?'+':'')+managerFinal.round.toFixed(2)); }
+          }
+        }
 
         document.getElementById('pdfIvaRow').style.display = state.intl ? 'none' : 'flex';
-        document.getElementById('pdfSubtotal').textContent = money(subtotal);
-        document.getElementById('pdfDiscount').textContent = '-' + money(discountAmt);
-        document.getElementById('pdfIva').textContent      = money(ivaAmt);
-        document.getElementById('pdfTotal').textContent    = money(total);
+        document.getElementById('pdfSubtotal').textContent = fmt(subtotal);
+        document.getElementById('pdfDiscount').textContent = '-' + fmt(discountAmt);
+        document.getElementById('pdfIva').textContent      = fmt(ivaAmt);
+        document.getElementById('pdfTotal').textContent    = fmt(finalTotal);
 
+        // Nota ajustes
+        var adj = document.getElementById('pdfAdjustNote');
+        if (pdfAdjust.length){ adj.style.display='block'; adj.textContent = 'Ajustes aplicados: ' + pdfAdjust.join(' · '); }
+        else { adj.style.display='none'; adj.textContent=''; }
+
+        // --- Financiamiento con finalTotal
         var downPct = getDownPct();
-        var downAmt = total*downPct;
-        var financed = Math.max(0, total - downAmt);
+        var downAmt = finalTotal * downPct;
+        var financed = Math.max(0, finalTotal - downAmt);
         document.getElementById('pdfDownPct').textContent = Math.round(downPct*100)+'%';
         document.getElementById('pdfDownAmt').textContent = money(downAmt);
 
@@ -954,10 +1164,10 @@
           plansHtml += '<div class="border rounded-xl p-2"><div class="text-xs brand-gray">'+term+' meses</div><div class="font-semibold">'+ money(payAmortized(financed, APR, term)) +'</div></div>';
         }
 
-        // 1/3 + 12 MSI (0% interés)
+        // 1/3 + 12 MSI (0%)
         var msiDownPct = 1/3;
-        var msiDownAmt = total * msiDownPct;
-        var msiMonthly = (total - msiDownAmt) / 12;
+        var msiDownAmt = finalTotal * msiDownPct;
+        var msiMonthly = (finalTotal - msiDownAmt) / 12;
         var msiHtml = '<div class="border rounded-xl p-2 col-span-2"><div class="text-xs brand-gray">1/3 enganche + 12 MSI (0%)</div><div class="font-semibold">'+ money(msiMonthly) +'</div><div class="text-xs brand-gray mt-1">Enganche: '+ money(msiDownAmt) +'</div></div>';
 
         document.getElementById('pdfFinTable').innerHTML = plansHtml + msiHtml;
