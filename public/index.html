@@ -447,7 +447,6 @@
       const arr = Array.from(new Uint8Array(buf));
       return arr.map(b => b.toString(16).padStart(2,'0')).join('');
     }
-    function fmt(n){ return money(n); } // alias breve
     function effectiveUnit(sku, base){
       const ov = managerOverrides[sku];
       if (!ov) return base;
@@ -474,6 +473,7 @@
       var IVA_PCT = 16;       // IVA fijo
       var INCLUDE_PDF_IMAGES = true;
       var MAX_QTY_PER_PRODUCT = 20;
+      
 
       /* Datos de contacto para el PDF (edítalos a tu gusto) */
       var CONTACT = [
@@ -646,6 +646,7 @@
 
       function currencyCode(){ return state.intl ? 'USD' : 'MXN'; }
       function money(n){ return Number(n||0).toLocaleString(state.intl ? 'en-US' : 'es-MX', { style:'currency', currency: currencyCode() }); }
+      var fmt = money; // alias local
       function conv(mxn){ return state.intl ? (mxn / Math.max(0.0001, state.fx)) : mxn; }
       function payAmortized(P, annualPct, n){
         var r = (Number(annualPct)||0)/100/12;
