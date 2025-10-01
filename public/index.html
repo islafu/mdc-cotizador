@@ -973,6 +973,27 @@
         recalc._lastAdjustNote = adjustNote.join(' · ');
       }
 
+function renderMgrBits(it){
+  var base = conv(it.unit_price);
+  var eff  = effectiveUnit(it.sku, base);
+  var ov   = managerOverrides[it.sku] || {};
+  var html = ''
+    + '<div class="flex items-center justify-end gap-2">'
+    +   '<button type="button" class="mgr-icon" title="Editar $/u" onclick="openPricePopover(this,\''+it.sku+'\')">✏️</button>'
+    +   '<label class="text-xs inline-flex items-center gap-1" title="Cortesía">'
+    +     '<input type="checkbox" '+(ov.gift?'checked':'')+' onchange="toggleGift(\''+it.sku+'\', this.checked)"> Regalo'
+    +   '</label>'
+    + '</div>';
+
+  if (eff !== base){
+    html += '<div class="text-xs text-green-700 mt-1"><span class="line-through text-gray-500">'
+         +   fmt(base) + '</span> → <b>' + fmt(eff) + '</b>'
+         +   (ov.gift ? ' · cortesía' : '')
+         + '</div>';
+  }
+  return html;
+}
+
 function renderCart(){
   var wrap = document.getElementById('cartTable');
   if (!state.items.length){
@@ -1016,28 +1037,15 @@ function renderCart(){
       +   '</div>'
 
       +   '<div class="text-right relative">'
-   (isManager
-     ? (function(){ var ov = managerOverrides[it.sku]||{};
-         return ''
-           // Botones mini: editar precio y marcar cortesía
-           + '<div class="flex items-center justify-end gap-2">'
-             + '<button type="button" class="mgr-icon" title="Editar $/u" onclick="openPricePopover(this,\''+it.sku+'\')">✏️</button>'
-             + '<label class="text-xs inline-flex items-center gap-1" title="Cortesía">'
-             +   '<input type="checkbox" '+(ov.gift?'checked':'')+' onchange="toggleGift(\''+it.sku+'\', this.checked)"> Regalo'
-             + '</label>'
-           + '</div>'
-           // Precio anterior → actual (si aplica)
-           + (effectiveUnit(it.sku, conv(it.unit_price))!==conv(it.unit_price)
-              ? '<div class="text-xs text-green-700 mt-1"><span class="line-through text-gray-500">'
-                  + fmt(conv(it.unit_price)) + '</span> → <b>'
-                  + fmt(effectiveUnit(it.sku, conv(it.unit_price))) + '</b>'
-                + (ov.gift?' · cortesía':'') + '</div>'
-              : '');
-       })()
-     : '')
-   + '<button class="trash-btn no-print" title="Eliminar" aria-label="Eliminar" onclick="removeItem('+i+')">…svg…</button>'
- + '</div>';
-  }
+      +     + (isManager ? renderMgrBits(it) : '')
+      +     + '<button class="trash-btn no-print" title="Eliminar" aria-label="Eliminar" onclick="removeItem('+i+')">'
+      +     +   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">'
+      +     +     '<path d="M9 3a1 1 0 0 0-1 1v1H5.5a1 1 0 1 0 0 2H6v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7h.5a1 1 0 1 0 0-2H16V4a1 1 0 0 0-1-1H9zm2 3h2V5h-2v1zm-1 4a1 1 0 0 1 2 0v8a1 1 0 1 1-2 0V10zm5 0a1 1 0 0 1 2 0v8a1 1 0 1 1-2 0V10z"/>'
+      +     +   '</svg>'
+      +     + '</button>'
+      +   + '</div>';
+
+        }
 
   wrap.innerHTML = header + rows;
 
@@ -1085,7 +1093,7 @@ window.applyPrice = function(sku){
 };
 window.clearOverride = function(sku){
   if (managerOverrides[sku]) delete managerOverrides[sku];
-  saveMgrState(); closePricePopover?.(); recalc(); renderPDF(); renderCart();
+  saveMgrState(); if (typeof closePricePopover === 'function') closePricePopover(); recalc(); renderPDF(); renderCart();
 };
 
 
