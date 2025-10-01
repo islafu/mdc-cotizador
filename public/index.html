@@ -1012,40 +1012,42 @@ function renderCart(){
 
   var rows = '';
   for (var i=0;i<state.items.length;i++){
-    var it = state.items[i];
-    var baseUnit = conv(it.unit_price);
-    var effUnit  = effectiveUnit(it.sku, baseUnit);
+  var it = state.items[i];
+  var baseUnit = conv(it.unit_price);
+  var effUnit  = effectiveUnit(it.sku, baseUnit);
 
-    rows += ''
-      + '<div class="row">'
-      +   '<div class="cart-name col-span-2 sm:col-span-1">'
-      +      it.name
-      +      '<div class="text-xs brand-gray sm:hidden mt-0.5">'
-      +         fmt(baseUnit) + (effUnit!==baseUnit ? ' → ' + fmt(effUnit) : '')
-      +      '</div>'
-      +   '</div>'
+  var managerHtml = isManager ? renderMgrBits(it) : '';
 
-      +   '<div class="cart-num hidden sm:block">'
-      +      fmt(baseUnit)
-      +      (effUnit!==baseUnit ? '<div class="text-xs text-green-700">→ '+fmt(effUnit)+'</div>' : '')
-      +   '</div>'
+  rows += `
+    <div class="row">
+      <div class="cart-name col-span-2 sm:col-span-1">
+        ${it.name}
+        <div class="text-xs brand-gray sm:hidden mt-0.5">
+          ${fmt(baseUnit)}${effUnit!==baseUnit ? ' → ' + fmt(effUnit) : ''}
+        </div>
+      </div>
 
-      +   '<div class="cart-num">'
-      +     '<input type="number" min="1" max="'+MAX_QTY_PER_PRODUCT+'" value="'+it.qty+'" '
-      +       'class="border rounded px-2 py-1 cart-qty no-print" '
-      +       'onchange="updateQty('+i+', this.value)">'
-      +   '</div>'
+      <div class="cart-num hidden sm:block">
+        ${fmt(baseUnit)}
+        ${effUnit!==baseUnit ? `<div class="text-xs text-green-700">→ ${fmt(effUnit)}</div>` : ``}
+      </div>
 
-      +   '<div class="text-right relative">'
-      +     + (isManager ? renderMgrBits(it) : '')
-      +     + '<button class="trash-btn no-print" title="Eliminar" aria-label="Eliminar" onclick="removeItem('+i+')">'
-      +     +   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">'
-      +     +     '<path d="M9 3a1 1 0 0 0-1 1v1H5.5a1 1 0 1 0 0 2H6v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7h.5a1 1 0 1 0 0-2H16V4a1 1 0 0 0-1-1H9zm2 3h2V5h-2v1zm-1 4a1 1 0 0 1 2 0v8a1 1 0 1 1-2 0V10zm5 0a1 1 0 0 1 2 0v8a1 1 0 1 1-2 0V10z"/>'
-      +     +   '</svg>'
-      +     + '</button>'
-      +   + '</div>';
+      <div class="cart-num">
+        <input type="number" min="1" max="${MAX_QTY_PER_PRODUCT}" value="${it.qty}"
+               class="border rounded px-2 py-1 cart-qty no-print"
+               onchange="updateQty(${i}, this.value)">
+      </div>
 
-        }
+      <div class="text-right relative">
+        ${managerHtml}
+        <button class="trash-btn no-print" title="Eliminar" aria-label="Eliminar" onclick="removeItem(${i})">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+            <path d="M9 3a1 1 0 0 0-1 1v1H5.5a1 1 0 1 0 0 2H6v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7h.5a1 1 0 1 0 0-2H16V4a1 1 0 0 0-1-1H9zm2 3h2V5h-2v1zm-1 4a1 1 0 0 1 2 0v8a1 1 0 1 1-2 0V10zm5 0a1 1 0 0 1 2 0v8a1 1 0 1 1-2 0V10z"/>
+          </svg>
+        </button>
+      </div>
+    </div>`;
+}
 
   wrap.innerHTML = header + rows;
 
