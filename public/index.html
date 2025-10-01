@@ -534,8 +534,10 @@
             document.getElementById('managerBtn').className = 'px-4 py-2 rounded-2xl border border-green-600 text-green-700';
             document.getElementById('managerAdjustWrap').classList.remove('hidden');
             showToast('Modo gerente activado.', 'success');
-            renderCart(); // para dibujar inputs extras
-            renderPDF();
+            applyMgrStateToUI();
+            disableWhenForced();
+            paintMgrChips();
+            recalc(); renderPDF(); renderCart();
           }else{
             showToast('Contraseña incorrecta.', 'warn', 1800);
           }
@@ -548,28 +550,43 @@
         document.getElementById('managerAdjustWrap').classList.add('hidden');
         managerOverrides = {};
         managerFinal = { extraPct:0, round:0, forceTotal:null };
+        loadMgrState();
         renderCart(); renderPDF();
         showToast('Modo gerente desactivado.', 'info');
       }
-    });
-
-    // listeners de ajustes finales
-    ['mgrExtraPct','mgrRound','mgrForceTotal'].forEach(function(id){
-      var el = document.getElementById(id);
-      el.addEventListener('input', function(){
-        managerFinal.extraPct = Math.max(0, Number(document.getElementById('mgrExtraPct').value)||0);
-        managerFinal.round    = Number(document.getElementById('mgrRound').value)||0;
-        var f = document.getElementById('mgrForceTotal').value;
-        managerFinal.forceTotal = (f===''? null : Math.max(0, Number(f)));
-        recalc(); renderPDF();
-      });
     });
 
     // Botón "Avanzado"
       document.getElementById('mgrMoreBtn').addEventListener('click',()=>{
         document.getElementById('mgrAdvanced').classList.toggle('hidden');
       });
-
+    
+      function saveMgrState(){
+        try{
+          const data = {
+            overrides: managerOverrides,
+            final: managerFinal
+          };
+          sessionStorage.setItem('mdc_mgr', JSON.stringify(data));
+        }catch(_){}
+      }
+      function loadMgrState(){
+        try{
+          const raw = sessionStorage.getItem('mdc_mgr');
+          if(!raw) return;
+          const data = JSON.parse(raw);
+          managerOverrides = data.overrides || {};
+          managerFinal     = data.final || { extraPct:0, round:0, forceTotal:null };
+        }catch(_){}
+      }
+      function applyMgrStateToUI(){
+        // rellena inputs con lo cargado
+        const f = managerFinal || {};
+        const $ = id => document.getElementById(id);
+        if ($('mgrExtraPct'))   $('mgrExtraPct').value   = Number(f.extraPct||0);
+        if ($('mgrRound'))      $('mgrRound').value      = Number(f.round||0);
+        if ($('mgrForceTotal')) $('mgrForceTotal').value = (f.forceTotal==null ? '' : Number(f.forceTotal));
+      }
       // Guardado + chips
       function paintMgrChips(){
         var chips = [];
