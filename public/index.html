@@ -463,12 +463,13 @@
       return arr.map(b => b.toString(16).padStart(2,'0')).join('');
     }
     function effectiveUnit(sku, base){
-      const ov = managerOverrides[sku];
-      if (!ov) return base;
-      if (ov.gift) return 0;
-      if (typeof ov.price === 'number' && !isNaN(ov.price)) return ov.price;
-      return base;
-    }
+    if (!isManager) return base;               // ← solo aplicamos overrides si está activo
+    const ov = managerOverrides[sku];
+    if (!ov) return base;
+    if (ov.gift) return 0;
+    if (typeof ov.price === 'number' && !isNaN(ov.price)) return ov.price;
+    return base;
+  }
 
     /* ===== Banner errores JS ===== */
     window.addEventListener('error', function(e){
@@ -550,7 +551,6 @@
         document.getElementById('managerAdjustWrap').classList.add('hidden');
         managerOverrides = {};
         managerFinal = { extraPct:0, round:0, forceTotal:null };
-        loadMgrState();
         renderCart(); renderPDF();
         showToast('Modo gerente desactivado.', 'info');
       }
@@ -620,7 +620,16 @@
         disableWhenForced(); saveMgrState(); paintMgrChips(); renderCart(); recalc(); renderPDF();
       });
       document.getElementById('managerLockBtn').addEventListener('click', ()=>{
-        isManager = false; document.getElementById('managerBtn').click();
+        // Copia lo mismo que haces en el else { ... } del managerBtn:
+        isManager = false;
+        document.getElementById('managerBtn').textContent = 'Modo gerente 🔒';
+        document.getElementById('managerBtn').className = 'px-4 py-2 rounded-2xl border border-slate-400 text-slate-700';
+        document.getElementById('managerAdjustWrap').classList.add('hidden');
+        managerOverrides = {};
+        managerFinal = { extraPct:0, round:0, forceTotal:null };
+        // (no llames loadMgrState aquí)
+        renderCart(); renderPDF();
+        showToast('Modo gerente desactivado.', 'info');
       });
 
       /* === Cache-busting + fallbacks de logos de marca === */
@@ -744,6 +753,8 @@
         }
         return Number(sel || 0.2);
       }
+
+      loadMgrState(); 
 
       function refreshCategories(){
         var catSel = document.getElementById('category');
@@ -1082,7 +1093,7 @@ function renderCart(){
   };
 
   window.openPricePopover = function(anchor, sku){
-  closePricePopover(); // cierra otro abierto
+  if (typeof window.closePricePopover === 'function') window.closePricePopover(); // ← evita ReferenceError
   var ov = managerOverrides[sku]||{};
   var pop = document.createElement('div');
   pop.className = 'mgr-pop';
@@ -1095,9 +1106,11 @@ function renderCart(){
     '</div>';
   document.body.appendChild(pop);
   // posicionar
+  requestAnimationFrame(()=>{
   var r = anchor.getBoundingClientRect();
   pop.style.top  = (window.scrollY + r.bottom + 6) + 'px';
   pop.style.left = (window.scrollX + r.right - pop.offsetWidth) + 'px';
+});
 
   // cierres
   setTimeout(()=>document.addEventListener('click', onDoc,true),0);
