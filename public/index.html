@@ -104,6 +104,10 @@
 }
 
     #jsErrorBanner{position:fixed;bottom:8px;left:8px;right:8px;background:#b91c1c;color:#fff;padding:10px 12px;border-radius:10px;z-index:70;box-shadow:0 10px 20px rgba(0,0,0,.25);font-size:.9rem;}
+    .mgr-pop{ position:absolute; z-index:40; background:#fff; border:1px solid #e5e7eb; border-radius:.5rem; box-shadow:0 10px 20px rgba(0,0,0,.12); padding:.5rem; }
+    .mgr-icon{ width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #e5e7eb;border-radius:.5rem;background:#fff; }
+    .mgr-icon:hover{ background:#f9fafb; }
+
   </style>
 </head>
 <body class="bg-[var(--brand-light)] text-[var(--brand-dark)] min-h-screen">
@@ -206,22 +210,33 @@
 
                 <!-- Ajustes finales (modo gerente) -->
         <div id="managerAdjustWrap" class="mt-3 border-t pt-3 hidden">
-          <h4 class="font-semibold text-sm mb-2">Ajustes finales</h4>
-          <div class="grid sm:grid-cols-3 gap-2 text-sm">
-            <label class="flex items-center justify-between gap-2">
-              <span>Descuento adicional (%)</span>
-              <input id="mgrExtraPct" type="number" step="0.1" min="0" value="0" class="border rounded px-2 py-1 w-24 text-right">
-            </label>
-            <label class="flex items-center justify-between gap-2">
-              <span>Redondeo (±)</span>
-              <input id="mgrRound" type="number" step="1" value="0" class="border rounded px-2 py-1 w-24 text-right">
-            </label>
-            <label class="flex items-center justify-between gap-2">
-              <span>Total forzado</span>
-              <input id="mgrForceTotal" type="number" step="0.01" min="0" placeholder="" class="border rounded px-2 py-1 w-32 text-right">
-            </label>
+          <div class="flex flex-wrap items-center gap-2 justify-between">
+            <h4 class="font-semibold text-sm">Ajustes finales</h4>
+            <div class="flex items-center gap-2 text-sm">
+              <label class="inline-flex items-center gap-1">
+                <span class="text-slate-600">Desc. +%</span>
+                <input id="mgrExtraPct" type="number" step="0.1" min="0" value="0" class="w-20 text-right border rounded px-2 py-1">
+              </label>
+              <label class="inline-flex items-center gap-1">
+                <span class="text-slate-600">Redondeo</span>
+                <input id="mgrRound" type="number" step="1" value="0" class="w-24 text-right border rounded px-2 py-1">
+              </label>
+              <label class="inline-flex items-center gap-1">
+                <span class="text-slate-600">Total forzado</span>
+                <input id="mgrForceTotal" type="number" step="0.01" min="0" class="w-28 text-right border rounded px-2 py-1" placeholder="ej. 120000">
+              </label>
+              <button id="mgrResetAll" type="button" class="text-xs px-2 py-1 border rounded">Reset</button>
+              <button id="managerLockBtn" type="button" class="text-xs px-2 py-1 border rounded">Bloquear 🔒</button>
+              <button id="mgrMoreBtn" type="button" class="text-xs px-2 py-1 border rounded">Avanzado</button>
+            </div>
           </div>
-          <p class="text-xs brand-gray mt-1">Si “Total forzado” tiene un valor, ignora descuento adicional y redondeo.</p>
+          <p class="text-xs brand-gray mt-1">Si “Total forzado” tiene valor, se ignoran descuento y redondeo.</p>
+
+          <!-- Avanzado colapsable -->
+          <div id="mgrAdvanced" class="hidden mt-2">
+            <div id="mgrChips" class="flex flex-wrap gap-2"></div>
+            <p class="text-xs text-slate-500">Resumen de ajustes y overrides aplicados.</p>
+          </div>
         </div>
 
         <!-- Carrito -->
@@ -549,6 +564,47 @@
         recalc(); renderPDF();
       });
     });
+
+    // Botón "Avanzado"
+      document.getElementById('mgrMoreBtn').addEventListener('click',()=>{
+        document.getElementById('mgrAdvanced').classList.toggle('hidden');
+      });
+
+      // Guardado + chips
+      function paintMgrChips(){
+        var chips = [];
+        if (managerFinal.forceTotal!=null) chips.push('Total forzado');
+        else{
+          if ((managerFinal.extraPct||0)>0) chips.push('Desc +'+managerFinal.extraPct.toFixed(1)+'%');
+          if ((managerFinal.round||0)!==0) chips.push('Redondeo '+(managerFinal.round>0?'+':'')+managerFinal.round);
+        }
+        document.getElementById('mgrChips').innerHTML =
+          chips.map(t=>'<span class="text-xs px-2 py-1 rounded-full bg-pink-100 text-pink-700">'+t+'</span>').join('');
+      }
+      function disableWhenForced(){
+        var dis = (managerFinal.forceTotal!=null && managerFinal.forceTotal!=='');
+        ['mgrExtraPct','mgrRound'].forEach(id=>document.getElementById(id).disabled = dis);
+      }
+      ['mgrExtraPct','mgrRound','mgrForceTotal'].forEach(id=>{
+        document.getElementById(id).addEventListener('input', ()=>{
+          managerFinal.extraPct = Math.max(0, Number(document.getElementById('mgrExtraPct').value)||0);
+          managerFinal.round    = Number(document.getElementById('mgrRound').value)||0;
+          var f = document.getElementById('mgrForceTotal').value.trim();
+          managerFinal.forceTotal = (f===''? null : Math.max(0, Number(f)));
+          disableWhenForced(); saveMgrState(); paintMgrChips(); recalc(); renderPDF();
+        });
+      });
+
+      // Reset y Bloquear (reusa tu handler)
+      document.getElementById('mgrResetAll').addEventListener('click', ()=>{
+        managerOverrides = {};
+        managerFinal = { extraPct:0, round:0, forceTotal:null };
+        ['mgrExtraPct','mgrRound','mgrForceTotal'].forEach(id=>document.getElementById(id).value = id==='mgrForceTotal'?'':'0');
+        disableWhenForced(); saveMgrState(); paintMgrChips(); renderCart(); recalc(); renderPDF();
+      });
+      document.getElementById('managerLockBtn').addEventListener('click', ()=>{
+        isManager = false; document.getElementById('managerBtn').click();
+      });
 
       /* === Cache-busting + fallbacks de logos de marca === */
       var ASSET_VERSION = '2025-08-28-2';
@@ -959,30 +1015,28 @@ function renderCart(){
       +       'onchange="updateQty('+i+', this.value)">'
       +   '</div>'
 
-      +   '<div class="text-right">';
-        if (isManager){
-          var ov = managerOverrides[it.sku] || {};
-          rows += ''
-            + '<div class="flex flex-col items-end gap-1">'
-            +   '<label class="text-xs text-gray-600">Override $/u'
-            +     '<input type="number" step="0.01" min="0" value="'+(ov.price!=null?ov.price:'')+'" '
-            +       'class="mt-1 border rounded px-2 py-1 w-28 text-right" '
-            +       'oninput="setOverridePrice(\''+it.sku+'\', this.value)">'
-            +   '</label>'
-            +   '<label class="text-xs inline-flex items-center gap-1">'
-            +     '<input type="checkbox" '+(ov.gift?'checked':'')+' '
-            +       'onchange="toggleGift(\''+it.sku+'\', this.checked)"> Cortesía'
-            +   '</label>';
-        }
-        rows += ''
-            +   '<button class="trash-btn no-print" title="Eliminar" aria-label="Eliminar" onclick="removeItem('+i+')">'
-            +     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">'
-            +       '<path d="M9 3a1 1 0 0 0-1 1v1H5.5a1 1 0 1 0 0 2H6v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7h.5a1 1 0 1 0 0-2H16V4a1 1 0 0 0-1-1H9zm2 3h2V5h-2v1zm-1 4a1 1 0 0 1 2 0v8a1 1 0 1 1-2 0V10zm5 0a1 1 0 0 1 2 0v8a1 1 0 1 1-2 0V10z"/>'
-            +     '</svg>'
-            +   '</button>'
-            + (isManager ? '</div>' : '')
-      +   '</div>'
-      + '</div>';
+      +   '<div class="text-right relative">'
+   (isManager
+     ? (function(){ var ov = managerOverrides[it.sku]||{};
+         return ''
+           // Botones mini: editar precio y marcar cortesía
+           + '<div class="flex items-center justify-end gap-2">'
+             + '<button type="button" class="mgr-icon" title="Editar $/u" onclick="openPricePopover(this,\''+it.sku+'\')">✏️</button>'
+             + '<label class="text-xs inline-flex items-center gap-1" title="Cortesía">'
+             +   '<input type="checkbox" '+(ov.gift?'checked':'')+' onchange="toggleGift(\''+it.sku+'\', this.checked)"> Regalo'
+             + '</label>'
+           + '</div>'
+           // Precio anterior → actual (si aplica)
+           + (effectiveUnit(it.sku, conv(it.unit_price))!==conv(it.unit_price)
+              ? '<div class="text-xs text-green-700 mt-1"><span class="line-through text-gray-500">'
+                  + fmt(conv(it.unit_price)) + '</span> → <b>'
+                  + fmt(effectiveUnit(it.sku, conv(it.unit_price))) + '</b>'
+                + (ov.gift?' · cortesía':'') + '</div>'
+              : '');
+       })()
+     : '')
+   + '<button class="trash-btn no-print" title="Eliminar" aria-label="Eliminar" onclick="removeItem('+i+')">…svg…</button>'
+ + '</div>';
   }
 
   wrap.innerHTML = header + rows;
@@ -999,6 +1053,41 @@ function renderCart(){
     managerOverrides[sku].gift = !!checked;
     recalc(); renderPDF();
   };
+
+  window.openPricePopover = function(anchor, sku){
+  closePricePopover(); // cierra otro abierto
+  var ov = managerOverrides[sku]||{};
+  var pop = document.createElement('div');
+  pop.className = 'mgr-pop';
+  pop.innerHTML = ''+
+    '<div class="text-xs text-slate-600 mb-1">Override $/u</div>'+
+    '<input id="mgrPriceInput" type="number" min="0" step="0.01" value="'+(ov.price!=null?ov.price:'')+'" class="border rounded px-2 py-1 w-36 text-right">'+
+    '<div class="mt-2 flex gap-2 justify-end">'+
+      '<button class="text-xs px-2 py-1 border rounded" onclick="applyPrice(\''+sku+'\')">Aplicar</button>'+
+      '<button class="text-xs px-2 py-1 border rounded" onclick="clearOverride(\''+sku+'\')">Quitar</button>'+
+    '</div>';
+  document.body.appendChild(pop);
+  // posicionar
+  var r = anchor.getBoundingClientRect();
+  pop.style.top  = (window.scrollY + r.bottom + 6) + 'px';
+  pop.style.left = (window.scrollX + r.right - pop.offsetWidth) + 'px';
+
+  // cierres
+  setTimeout(()=>document.addEventListener('click', onDoc,true),0);
+  function onDoc(e){ if(!pop.contains(e.target) && e.target!==anchor){ closePricePopover(); } }
+  window.closePricePopover = function(){ try{ document.removeEventListener('click', onDoc,true); pop.remove(); }catch(_){} };
+};
+window.applyPrice = function(sku){
+  var v = document.getElementById('mgrPriceInput').value;
+  managerOverrides[sku] = managerOverrides[sku]||{};
+  if (v === '') delete managerOverrides[sku].price; else managerOverrides[sku].price = Math.max(0, Number(v)||0);
+  saveMgrState(); closePricePopover(); recalc(); renderPDF(); renderCart();
+};
+window.clearOverride = function(sku){
+  if (managerOverrides[sku]) delete managerOverrides[sku];
+  saveMgrState(); closePricePopover?.(); recalc(); renderPDF(); renderCart();
+};
+
 
   recalc();
   renderPDF();
