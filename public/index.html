@@ -170,23 +170,28 @@
         </div>
 
         <!-- Tarifa / Pago -->
-        <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div class="flex items-center gap-2">
-            <label class="whitespace-nowrap font-medium">Tarifa:</label>
-            <select id="priceAudience" class="border rounded px-2 py-1">
+        <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-y-3 sm:gap-y-2 sm:gap-x-6 items-end">
+          <!-- Tarifa -->
+          <div class="flex items-center gap-2 sm:gap-3">
+            <label class="whitespace-nowrap font-medium w-16 sm:w-20">Tarifa:</label>
+            <select id="priceAudience" class="border rounded px-2 py-1 w-44 sm:w-56">
               <option value="public">Público</option>
               <option value="dealer" selected>Distribuidor / Evento</option>
             </select>
           </div>
-          <div class="flex items-center gap-2">
-            <label class="whitespace-nowrap font-medium">Pago:</label>
-            <select id="pricePayment" class="border rounded px-2 py-1">
+
+          <!-- Pago -->
+          <div class="flex items-center gap-2 sm:gap-3">
+            <label class="whitespace-nowrap font-medium w-16 sm:w-20">Pago:</label>
+            <select id="pricePayment" class="border rounded px-2 py-1 w-44 sm:w-56">
               <option value="fin">Financiado</option>
               <option value="cash" selected>Contado</option>
             </select>
           </div>
+
+          <!-- Nota (que ocupe todo el ancho en desktop) -->
+          <div id="priceNote" class="text-xs text-slate-500 sm:col-span-2"></div>
         </div>
-        <div id="priceNote" class="text-xs text-slate-500 mt-1"></div>
 
         <div class="text-sm space-y-2">
           <div class="flex justify-between"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
@@ -434,9 +439,17 @@
     {"sku":"VAC-R412","name":"Unidad de Succión R412 Rhino","brand":"Rhino","category":"Accesorios","unit_price":18468,"description":"Compacta, <65dB, motor sin escobillas."},
     {"sku":"VAC-IVAC-SIL","name":"Unidad de Succión iVAC Silence","brand":"imes-icore","category":"Accesorios","unit_price":32497,"description":"Compacta, silenciosa, Filtro HEPA."},
     {"sku":"VAC-IVAC-EC+","name":"Unidad de Succión iVAC ECO+","brand":"imes-icore","category":"Accesorios","unit_price":32497,"description":"Compacta, alto flujo, Filtro HEPA."},
-    {"sku":"KIT-350I","name":"Kit de inicio para serie 350i, 250i PRO","brand":"imes-icore","category":"Accesorios","unit_price":25164,"description":"Herramientas y accesorios para funcion de la maquina"},
     {"sku":"KIT-150I","name":"Kit de inicio para serie 150i","brand":"imes-icore","category":"Accesorios","unit_price":22515,"description":"Herramientas y accesorios para funcion de la maquina"},
-    {"sku":"CHILLER-SPINDLE","name":"Spindle Chiller","brand":"imes-icore","category":"Accesorios","unit_price":33375,"description":"Chiller enfriador de spindle para 350i PRO+ o superior"},
+    {"sku":"KIT-350I","name":"Kit de inicio para serie 350i, 250i PRO","brand":"imes-icore","category":"Accesorios","unit_price":25164,"description":"Herramientas y accesorios para funcion de la maquina"},
+    {"sku":"KIT-650I","name":"Kit de inicio para serie 650i","brand":"imes-icore","category":"Accesorios","unit_price":22680,"description":"Herramientas y accesorios para funcion de la maquina"},
+    {"sku":"KIT-650I-HSK","name":"Kit de accesorios HSK para serie 650i","brand":"imes-icore","category":"Accesorios","unit_price":155530,"description":"Herramientas y accesorios HSK para funcionamiento de fresas en 650i"},
+    {"sku":"MESA-150I","name":"Mesa para 150i/ONE","brand":"imes-icore","category":"Accesorios","unit_price":48100,"description":"Mesa hecha a la medida para serie 150i y ONE"},
+    {"sku":"MESA-350I","name":"Mesa para 350i","brand":"imes-icore","category":"Accesorios","unit_price":31140,"description":"Mesa hecha a la medida para serie 350i"},
+    {"sku":"MESA-350I-LOADER","name":"Mesa para 350i Loader","brand":"imes-icore","category":"Accesorios","unit_price":45614,"description":"Mesa hecha a la medida para serie 350i Loader"},
+    {"sku":"MESA-350I-XPRO","name":"Mesa para 350i XPRO","brand":"imes-icore","category":"Accesorios","unit_price":61815,"description":"Mesa hecha a la medida para serie 350i XPRO"},
+    {"sku":"MESA-250I","name":"Mesa para 250i","brand":"imes-icore","category":"Accesorios","unit_price":33572,"description":"Mesa hecha a la medida para serie 250i"},
+    
+
 
     {"sku":"HORN-GT1","name":"Horno de Sinterizado Zirconia GT1","brand":"Rhino","category":"Hornos","unit_price":97812,"description":"SiC, LCD, monitoreo en tiempo real."},
     {"sku":"HORN-KDF","name":"Horno de Sinterizado KDF Zircom/Speed","brand":"KDF","category":"Hornos","unit_price":222750,"description":"Hasta 1600°C, MoSi2, LCD 3.5\"."},
@@ -821,7 +834,7 @@
       });
 
       /* === Cache-busting + fallbacks de logos de marca === */
-      var ASSET_VERSION = '2025-10-01-1';
+      var ASSET_VERSION = '2025-10-02-2051742980';
       function slug(s){ return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
 
       function brandLogoCandidates(brand){
