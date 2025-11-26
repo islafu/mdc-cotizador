@@ -861,7 +861,7 @@
       });
 
       /* === Cache-busting + fallbacks de logos de marca === */
-      var ASSET_VERSION = '2025-11-25-1205469077';
+      var ASSET_VERSION = '2025-11-26-264744249';
       function slug(s){ return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
 
       function brandLogoCandidates(brand){
@@ -1572,7 +1572,7 @@ window.clearOverride = function(sku){
         document.getElementById('pdfDownPct').textContent = Math.round(downPct*100)+'%';
         document.getElementById('pdfDownAmt').textContent = money(downAmt);
 
-        var terms = [12,24,36,48];
+        var terms = [12,18,24,36,48];
         var plansHtml = '';
         for (var t=0;t<terms.length;t++){
           var term = terms[t];
