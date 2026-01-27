@@ -108,9 +108,32 @@
     .mgr-icon{ width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #e5e7eb;border-radius:.5rem;background:#fff; }
     .mgr-icon:hover{ background:#f9fafb; }
 
+    
+    /* Gate de acceso */
+#gate{ display:none; align-items:center; justify-content:center; }
+body.locked > :not(#gate){ display:none !important; }   /* oculta todo menos el gate */
+body.locked #gate{ display:flex; }                      /* muestra el gate cuando está bloqueado */
+
   </style>
 </head>
-<body class="bg-[var(--brand-light)] text-[var(--brand-dark)] min-h-screen">
+<body class="bg-[var(--brand-light)] text-[var(--brand-dark)] min-h-screen locked">
+
+  <!-- Overlay de contraseña -->
+<div id="gate" class="fixed inset-0 z-[100] bg-[var(--brand-dark)]/90 text-white p-6">
+  <form id="gateForm" class="bg-white text-slate-800 rounded-2xl p-5 w-full max-w-sm mx-auto shadow-xl">
+    <h2 class="font-semibold text-lg mb-1">Acceso privado</h2>
+    <p class="text-sm text-slate-600 mb-3">Ingresa la contraseña para ver la página.</p>
+
+    <input id="gatePwd" type="password" class="border rounded-xl px-3 py-2 w-full" placeholder="Contraseña" required>
+
+    <div class="flex justify-end gap-2 mt-3">
+      <button type="submit" class="btn-brand px-4 py-2 rounded-2xl">Entrar</button>
+    </div>
+
+    <p id="gateMsg" class="text-sm text-rose-600 mt-2 hidden">Contraseña incorrecta.</p>
+  </form>
+</div>
+
 
   <header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-neutral-200 no-print">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
@@ -674,6 +697,47 @@
 
   <script>
 
+  // Cambia este hash por el SHA-256 de tu contraseña (en hex).
+  // Puedes calcularlo en la consola del navegador con:
+  // (async()=>{const s="TuPassword!"; const enc=new TextEncoder().encode(s);
+  // const buf=await crypto.subtle.digest('SHA-256',enc);
+  // console.log([...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join(''));})();
+  const PAGE_HASH = "280691ab71a913bf151e6094184f2ee5518e064eb599f349eda8abde9920417e";
+
+  async function sha256Hex(str){
+    const enc = new TextEncoder().encode(str);
+    const buf = await crypto.subtle.digest('SHA-256', enc);
+    return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+
+  // Si ya desbloqueó en esta pestaña, no pidas de nuevo
+  if (sessionStorage.getItem('mdc_gate_ok') === '1') {
+    document.addEventListener('DOMContentLoaded', () => document.body.classList.remove('locked'));
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('gateForm');
+      const pwd  = document.getElementById('gatePwd');
+      const msg  = document.getElementById('gateMsg');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        msg.classList.add('hidden');
+
+        const hex = await sha256Hex(pwd.value || '');
+        if (hex === PAGE_HASH) {
+          sessionStorage.setItem('mdc_gate_ok', '1'); // válido hasta cerrar pestaña
+          document.body.classList.remove('locked');
+          pwd.value = '';
+        } else {
+          msg.classList.remove('hidden');
+          pwd.select();
+        }
+      });
+
+      setTimeout(()=>pwd.focus(), 0);
+    });
+  }
+
     // ===== MODO GERENTE =====
     var MANAGER_HASH = "53e0a0bd8d78af61829076bb80560d659baa48977d9747ff000da81bc5955b36"; 
     // ^^^ Reemplaza por el SHA-256 de tu contraseña (en hex). Ejemplo: de "mdc2025!" (cámbiala).
@@ -684,7 +748,7 @@
     // ajustes finales
     var managerFinal = { extraPct: 0, round: 0, forceTotal: null };
 
-    async function sha256Hex(str){
+    async function sha256Hex2(str){
       const enc = new TextEncoder().encode(str);
       const buf = await crypto.subtle.digest('SHA-256', enc);
       const arr = Array.from(new Uint8Array(buf));
@@ -759,7 +823,7 @@
         const pwd = prompt('Contraseña de gerente:');
         if (pwd == null) return;
         try{
-          const hex = await sha256Hex(pwd);
+          const hex = await sha256Hex2(pwd);
           if (hex === MANAGER_HASH){
             isManager = true;
             document.getElementById('managerBtn').textContent = 'Modo gerente ✅';
@@ -864,7 +928,7 @@
       });
 
       /* === Cache-busting + fallbacks de logos de marca === */
-      var ASSET_VERSION = '2026-01-27-1290447006';
+      var ASSET_VERSION = '2026-01-27-1683667192';
       function slug(s){ return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
 
       function brandLogoCandidates(brand){
@@ -973,8 +1037,11 @@
 
       // ===== Pricing rubric =====
       // Lo que hoy tienes en el catálogo es dealer cash (+30%), así obtenemos costo:
-      function baseCostFromCurrent(unit_price_mxn){ return Number(unit_price_mxn) / 1.35; }
-
+            // después (y opcional: centraliza en una constante)
+      const CATALOG_MARKUP_FROM_COST = 1.30; // dealer cash
+      function baseCostFromCurrent(unit_price_mxn){
+        return Number(unit_price_mxn) / CATALOG_MARKUP_FROM_COST;
+      }
       // Márgenes por rúbrica
       var MARKUP = {
         public: { fin: 1.40, cash: 1.35 },
@@ -1213,18 +1280,18 @@
           state.items.push({ sku:p.sku, name:p.name, unit_price:p.unit_price, qty:add, category:p.category });
           showToast('Producto agregado ('+add+').','success',1500);
         }
-        renderCart();
+        renderCart();recalc(); renderPDF();
       }
       function removeItem(i){
         state.items.splice(i,1);
-        renderCart();
+        renderCart();recalc(); renderPDF();
         showToast('Producto eliminado.','info',1400);
       }
       function updateQty(i, v){
         var prev = state.items[i].qty;
         var newQty = clampQty(v);
         state.items[i].qty = newQty;
-        renderCart();
+        renderCart();recalc(); renderPDF();
         if (parseInt(v,10) !== newQty) {
           showToast('Máximo '+MAX_QTY_PER_PRODUCT+' unidades por producto.','info');
         } else if (newQty !== prev) showToast('Cantidad: '+newQty+'.','success',1200);
@@ -1606,8 +1673,8 @@ window.clearOverride = function(sku){
         document.getElementById('pdfNotesLeft').textContent = left;
 
         var bottom = state.intl
-          ? '<p>Las cotizaciones vencen al mes de generadas. Precios referenciales 2025; sujetos a cambio sin previo aviso. Entrega estimada según equipo. Operación internacional en USD sin IVA. Planes de financiamiento con o sin interes solo validos en compras mayores a $50,000 DLLS. El pago atrasado en MSI puede representar cargos adicionales.'+ instNote +'</p>'
-          : '<p>Las cotizaciones vencen al mes de generadas. Precios referenciales 2025; sujetos a cambio sin previo aviso. Entrega estimada según equipo. Planes de financiamiento con o sin interes solo validos en compras mayores a $100,000 MXN. El pago atrasado en MSI puede representar cargos adicionales. '+ instNote +'</p>';
+          ? '<p>Las cotizaciones vencen al mes de generadas. Precios referenciales 2026; sujetos a cambio sin previo aviso. Entrega estimada según equipo. Operación internacional en USD sin IVA. Planes de financiamiento con o sin interes solo validos en compras mayores a $50,000 DLLS. El pago atrasado en MSI puede representar cargos adicionales.'+ instNote +'</p>'
+          : '<p>Las cotizaciones vencen al mes de generadas. Precios referenciales 2026; sujetos a cambio sin previo aviso. Entrega estimada según equipo. Planes de financiamiento con o sin interes solo validos en compras mayores a $100,000 MXN. El pago atrasado en MSI puede representar cargos adicionales. '+ instNote +'</p>';
         document.getElementById('pdfNotesBottom').innerHTML = bottom;
 
         // Datos de contacto
