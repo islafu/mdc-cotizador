@@ -1082,12 +1082,12 @@ body.locked #gate{ display:flex; }                      /* muestra el gate cuand
           priceAudienceEl.addEventListener('change', function(){
             state.pricing.audience = priceAudienceEl.value;
             paintPriceNote();
-            renderCatalog(CATALOG); renderCart(); recalc(); renderPDF();
+            applyFilters();  renderCart(); recalc(); renderPDF();
           });
           pricePaymentEl.addEventListener('change', function(){
             state.pricing.payment = pricePaymentEl.value;
             paintPriceNote();
-            renderCatalog(CATALOG); renderCart(); recalc(); renderPDF();
+            applyFilters();  renderCart(); recalc(); renderPDF();
           });
         }
         paintPriceNote();
@@ -1780,12 +1780,12 @@ window.clearOverride = function(sku){
         state.intl = !!intlEl.checked;
         fxWrap.classList.toggle('hidden', !state.intl);
         renderCart(); // recalcula y repinta precios
-        renderCatalog(CATALOG);
+        applyFilters(); 
         showToast(state.intl ? 'Modo internacional (USD) activado.' : 'Modo MXN activado.','info',1400);
       });
       fxEl.addEventListener('input', function(){
         var v = Number(fxEl.value)||0; state.fx = Math.max(0.0001, v);
-        renderCart(); renderCatalog(CATALOG);
+        renderCart(); applyFilters(); 
       });
 
       // “A nombre de”: refresca PDF live
