@@ -74,11 +74,14 @@
   header, main, footer, .no-print { display: none !important; }
 
   /* Muestra el documento PDF sin sombras ni márgenes exteriores */
-  #pdfDoc{
-    display: block !important;
-    margin: 0 !important;           /* evita que la clase my-8 empuje a otra página */
-    box-shadow: none !important;
-    border: 1px solid #e5e7eb;      /* opcional, igual que tus .card */
+    #pdfDoc{
+    width: 210mm;             /* A4 ancho */
+    max-width: 210mm;
+    margin: 0 auto;
+  }
+  /* En print puedes ajustar el padding en mm para que todo cuadre bonito */
+  @media print{
+    #pdfDoc{ padding: 8mm !important; } /* opcional */
   }
 
   /* Tablas: evita cortes de filas y repite encabezado */
@@ -1502,6 +1505,21 @@ window.clearOverride = function(sku){
         }
         return Promise.all(list);
       }
+
+              function normalizePdfImages(){
+          const imgs = document.querySelectorAll('#pdfDoc img.pdf-prod-img');
+          imgs.forEach(img=>{
+            const w = img.naturalWidth, h = img.naturalHeight;
+            if(!w || !h) return;
+            if(w >= h){
+              img.style.width = '150px';
+              img.style.height = 'auto';
+            }else{
+              img.style.width = 'auto';
+              img.style.height = '150px';
+            }
+          });
+        }
               function _pxPerMM(){ return 96/25.4; }                           // ≈3.78 px/mm
         function _pageHeightPx(){ return (297 - 2*10) * _pxPerMM(); }     // A4 menos márgenes @page (10mm)
         function _offsetWithin(el, ancestor){
@@ -1514,7 +1532,7 @@ window.clearOverride = function(sku){
           var doc = document.getElementById('pdfDoc');
           if(!doc) return;
           _removeAutoBreaks();
-          var pageH = _pageHeightPx(), fudge = 24; // colchón
+          var pageH = _pageHeightPx(), fudge = 40; // colchón
 
           ['pdfFinBlock','pdfContactBlock'].forEach(function(id){
             var el = document.getElementById(id);
@@ -1740,24 +1758,41 @@ window.clearOverride = function(sku){
 
       // Botón PDF
       document.getElementById('btnPDF').addEventListener('click', async function(){
-        try{
-          var pdfEl = document.getElementById('pdfDoc');
-          ensureFolio();
-          renderPDF(true);
-          await waitForImages(pdfEl);
-          ensureNicePageBreaks();   // 👈 aquí
+      try{
+        const pdfEl = document.getElementById('pdfDoc');
+        ensureFolio();
+        renderPDF(true);
+        await waitForImages(pdfEl);
+        normalizePdfImages();
+        ensureNicePageBreaks();
 
-          const opt = {
-            margin: 10,
-            filename: 'Cotizacion_' + document.getElementById('pdfFolio').textContent + '.pdf',
-            image: { type:'jpeg', quality:0.98 },
-            html2canvas: { scale: 2, useCORS: true, allowTaint: true, imageTimeout: 1500, scrollY: -window.scrollY },
-            jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
-            pagebreak: { mode: ['css','legacy'], avoid: ['tr','.keep-together'] }
-          };
-          await html2pdf().set(opt).from(pdfEl).save();
-        }catch(err){ console.error(err); showToast('No se pudo generar el PDF. Revisa la consola.', 'warn', 2600); }
-      });
+        // Fuerza un reflow antes de capturar (evita páginas en blanco)
+        pdfEl.getBoundingClientRect();
+        await delay(50);
+
+        const opt = {
+          margin: 10,
+          filename: 'Cotizacion_' + document.getElementById('pdfFolio').textContent + '.pdf',
+          image: { type:'jpeg', quality:0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            scrollX: 0,               // ← más fiable que scrollY negativo
+            scrollY: 0,
+            windowWidth: pdfEl.scrollWidth,
+            windowHeight: pdfEl.scrollHeight,
+            imageTimeout: 0
+          },
+          jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
+          pagebreak: { mode: ['css','legacy'], avoid: ['tr','.keep-together'] }
+        };
+        await html2pdf().set(opt).from(pdfEl).save();
+      }catch(err){
+        console.error(err);
+        showToast('No se pudo generar el PDF. Revisa la consola.', 'warn', 2600);
+      }
+    });
 
 
       document.getElementById('btnClearCart').addEventListener('click', function(){ state.items=[]; renderCart(); showToast('Carrito vacío.','info',1200); });
