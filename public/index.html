@@ -469,10 +469,12 @@ body.locked #gate{ display:flex; }                      /* muestra el gate cuand
     {"sku":"SOFT-HDEXP-HYB","name":"hyperDENT Express Híbrido 5X","brand":"hyperDENT","category":"Software","unit_price":90086,"description":"CAM dental ideal para maquinas Rhino en Híbrido."},
     {"sku":"SOFT-HDCOM-SI","name":"hyperDENT Compact Sin Implantes","brand":"hyperDENT","category":"Software","unit_price":120000,"description":"CAM dental ideal para maquinas Rhino que trabajen implantes"},
     {"sku":"SOFT-HDCOM-CI","name":"hyperDENT Compact Con Implantes","brand":"hyperDENT","category":"Software","unit_price":146346,"description":"CAM dental ideal para fresar implant-based en metal"},
+    {"sku":"SOFT-HDCOM-HYB","name":"hyperDENT HYBRID","brand":"hyperDENT","category":"Software","unit_price":163266,"description":"Modulo de hyperDENT para rectificado de impresion de metal, se requiere licencia activa de hyperDENT COMPACT con implantes. INCLUYE ADAPTADOR"},
     {"sku":"SOFT-ICAM-ECO","name":"iCAM V5 smart eco","brand":"imes-icore","category":"Software","unit_price":109452,"description":"CAM abierto, 5 ejes, para maquinas CORiTEC chicas"},
     {"sku":"SOFT-ICAM-SMT","name":"iCAM V5 smart","brand":"imes-icore","category":"Software","unit_price":129452,"description":"CAM abierto, 5 ejes, para maquinas CORiTEC grandes"},
     {"sku":"SOFT-ICAM-POST","name":"Postprocesador iCAM V5 smart","brand":"imes-icore","category":"Software","unit_price":21551,"description":"Modulo para agregar maquinas a iCAM V5 smart"},
     {"sku":"SOFT-ICAM-UPGRADE","name":"iCAM V5 smart UPGRADE","brand":"imes-icore","category":"Software","unit_price":69913,"description":"Actualización a la ultima versión de iCAM V5 smart"},
+    {"sku":"SOFT-ICAM-HYBRID","name":"iCAM V5 HYBRID","brand":"imes-icore","category":"Software","unit_price":182050,"description":"Modulo para rectificado de impresion de metal, se requiere ultima version de iCAM V5 Smart"},
 
     {"sku":"VAC-R412","name":"Unidad de Succión R412 Rhino","brand":"Rhino","category":"Accesorios","unit_price":19562,"description":"Compacta, <65dB, motor sin escobillas."},
     {"sku":"VAC-IVAC-SIL","name":"Unidad de Succión iVAC Silence","brand":"imes-icore","category":"Accesorios","unit_price":32497,"description":"Compacta, silenciosa, Filtro HEPA."},
@@ -931,7 +933,7 @@ body.locked #gate{ display:flex; }                      /* muestra el gate cuand
       });
 
       /* === Cache-busting + fallbacks de logos de marca === */
-      var ASSET_VERSION = '2026-01-27-1683667192';
+      var ASSET_VERSION = '2026-03-18-1929761306';
       function slug(s){ return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
 
       function brandLogoCandidates(brand){
