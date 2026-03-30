@@ -373,25 +373,26 @@ body.locked #gate{ display:flex; }                      /* muestra el gate cuand
       <tbody id="pdfItemsBody"></tbody>
     </table>
 
-    <div class="grid sm:grid-cols-2 gap-4 mt-4">
-    <div class="text-xs brand-gray" id="pdfNotesLeft">Moneda: MXN.</div>
-    <div class="border rounded-xl p-3">
-      <div class="flex justify-between text-sm"><span>Subtotal</span><span id="pdfSubtotal">$0.00</span></div>
-      <div class="flex justify-between text-sm"><span>Descuento</span><span id="pdfDiscount">-$0.00</span></div>
-      <div class="flex justify-between text-sm" id="pdfIvaRow"><span>IVA</span><span id="pdfIva">$0.00</span></div>
-      <div class="border-t mt-2 pt-2 flex justify-between font-semibold"><span>Total</span><span id="pdfTotal">$0.00</span></div>
-      <div id="pdfAdjustNote" class="text-xs text-gray-600 mt-2" style="display:none"></div>
-    </div>
-  </div>
+    <section id="pdfTotalsFinBlock" class="keep-together mt-4">
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="text-xs brand-gray" id="pdfNotesLeft">Moneda: MXN.</div>
+        <div class="border rounded-xl p-3">
+          <div class="flex justify-between text-sm"><span>Subtotal</span><span id="pdfSubtotal">$0.00</span></div>
+          <div class="flex justify-between text-sm"><span>Descuento</span><span id="pdfDiscount">-$0.00</span></div>
+          <div class="flex justify-between text-sm" id="pdfIvaRow"><span>IVA</span><span id="pdfIva">$0.00</span></div>
+          <div class="border-t mt-2 pt-2 flex justify-between font-semibold"><span>Total</span><span id="pdfTotal">$0.00</span></div>
+          <div id="pdfAdjustNote" class="text-xs text-gray-600 mt-2" style="display:none"></div>
+        </div>
+      </div>
 
-  <!-- === Plan de financiamiento (junto) === -->
-  <section id="pdfFinBlock" class="keep-together mt-6">
+  <section id="pdfFinBlock" class="mt-6">
     <h3 class="font-semibold mb-2">Plan de financiamiento</h3>
     <div class="text-sm mb-2">
       Enganche (planes con interés): <span id="pdfDownPct">20%</span> · Monto: <span id="pdfDownAmt">$0.00</span>
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm" id="pdfFinTable"></div>
   </section>
+</section>
 
   <!-- === Contacto + notas (junto) === -->
   <section id="pdfContactBlock" class="keep-together">
@@ -979,7 +980,7 @@ body.locked #gate{ display:flex; }                      /* muestra el gate cuand
       });
 
       /* === Cache-busting + fallbacks de logos de marca === */
-      var ASSET_VERSION = '2026-03-30-1780251417';
+      var ASSET_VERSION = '2026-03-30-1446331500';
       function slug(s){ return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
 
       function brandLogoCandidates(brand){
@@ -1580,14 +1581,17 @@ window.clearOverride = function(sku){
           var doc = document.getElementById('pdfDoc');
           if(!doc) return;
           _removeAutoBreaks();
-          var pageH = _pageHeightPx(), fudge = 40; // colchón
+          var pageH = _pageHeightPx();
+          var fudge = 60; // un poco más de colchón
 
-          ['pdfFinBlock','pdfContactBlock'].forEach(function(id){
+          ['pdfTotalsFinBlock', 'pdfContactBlock'].forEach(function(id){
             var el = document.getElementById(id);
             if(!el) return;
+
             var top = _offsetWithin(el, doc);
             var posInPage = top % pageH;
             var h = el.offsetHeight;
+
             if (posInPage + h > pageH - fudge){
               var br = document.createElement('div');
               br.className = 'pagebreak __auto';
