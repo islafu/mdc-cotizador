@@ -99,7 +99,20 @@
     break-inside: avoid; 
   }
   /* Mantener bloques completos en una sola página */
-  #pdfDoc .keep-together{ break-inside: avoid; page-break-inside: avoid; }
+  #pdfDoc .keep-together {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
+
+  #pdfDoc table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  #pdfDoc tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
 
   /* Marcador de salto forzado que insertaremos por JS si no cabe */
   #pdfDoc .pagebreak{ break-before: page; page-break-before: always; }
@@ -966,7 +979,7 @@ body.locked #gate{ display:flex; }                      /* muestra el gate cuand
       });
 
       /* === Cache-busting + fallbacks de logos de marca === */
-      var ASSET_VERSION = '2026-03-30-238032955';
+      var ASSET_VERSION = '2026-03-30-1780251417';
       function slug(s){ return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
 
       function brandLogoCandidates(brand){
@@ -1792,42 +1805,30 @@ window.clearOverride = function(sku){
     });;
 
       // Botón PDF
-      document.getElementById('btnPDF').addEventListener('click', async function(){
-      try{
-        const pdfEl = document.getElementById('pdfDoc');
-        ensureFolio();
-        renderPDF(true);
-        await waitForImages(pdfEl);
-        normalizePdfImages();
-        ensureNicePageBreaks();
+      document.getElementById("btnPDF").addEventListener("click", () => {
+        const element = document.getElementById("pdfDoc");
 
-        // Fuerza un reflow antes de capturar (evita páginas en blanco)
-        pdfEl.getBoundingClientRect();
-        await delay(50);
+        element.style.display = "block"; // 👈 importante
 
         const opt = {
-          margin: 10,
-          filename: 'Cotizacion_' + document.getElementById('pdfFolio').textContent + '.pdf',
-          image: { type:'jpeg', quality:0.98 },
-          html2canvas: {
-            scale: 2,
+          margin:       [10, 10, 10, 10], // mm
+          filename:     'cotizacion_mdc.pdf',
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { 
+            scale: 2,              // 👈 mejora calidad y estabilidad
             useCORS: true,
-            allowTaint: true,
-            scrollX: 0,               // ← más fiable que scrollY negativo
-            scrollY: 0,
-            windowWidth: pdfEl.scrollWidth,
-            windowHeight: pdfEl.scrollHeight,
-            imageTimeout: 0
+            scrollY: 0
           },
-          jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
-          pagebreak: { mode: ['css','legacy'], avoid: ['tr','.keep-together'] }
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak:    { 
+            mode: ['avoid-all', 'css', 'legacy'] // 👈 CLAVE
+          }
         };
-        await html2pdf().set(opt).from(pdfEl).save();
-      }catch(err){
-        console.error(err);
-        showToast('No se pudo generar el PDF. Revisa la consola.', 'warn', 2600);
-      }
-    });
+
+        html2pdf().set(opt).from(element).save().then(() => {
+          element.style.display = "none";
+        });
+      });
 
 
       document.getElementById('btnClearCart').addEventListener('click', function(){ state.items=[]; renderCart(); showToast('Carrito vacío.','info',1200); });
