@@ -427,6 +427,7 @@ body.locked #gate{ display:flex; }                      /* muestra el gate cuand
     {"sku":"RHINO-A51","name":"Fresadora RHINO A51 Seco","brand":"Rhino","category":"Fresadoras","unit_price":327409,"description":"5 ejes en seco, Spindle Sycotec, PANASONIC, cambiador automático de fresas."},
     {"sku":"RHINO-A52","name":"Fresadora RHINO A52 Seco","brand":"Rhino","category":"Fresadoras","unit_price":336983,"description":"5 ejes seco, PC táctil 12\", spindle Sycotec 820W, C-Clamp 12 fresas."},
     {"sku":"RHINO-A52W","name":"Fresadora RHINO A52W Húmedo-Seco","brand":"Rhino","category":"Fresadoras","unit_price":391293,"description":"5 ejes híbrida, depósito de agua, PC táctil, spindle Sycotec 820W."},
+    {"sku":"RHINO-A52DW","name": "Fresadora RHINO A52DW Húmedo-Seco","brand": "Rhino","category": "Fresadoras","unit_price": 425043,"description": "5 ejes híbrida húmedo-seco real, depósito de agua, PC táctil, spindle Sycotec 820W."},
     {"sku":"COR-150I-PRO","name":"CORiTEC 150i PRO Húmedo-Seco","brand":"imes-icore","category":"Fresadoras","unit_price":536587,"description":"5 ejes, 100k rpm, PC integrado, Smart Control."},
     {"sku":"COR-ONEPLUS","name":"CORiTEC ONE+ plus","brand":"imes-icore","category":"Fresadoras","unit_price":522789,"description":"5 ejes, húmedo integrado, premoldeados Ti/CoCr, 100k rpm."},
     {"sku":"COR-150I-DRY","name":"CORiTEC 150i DRY","brand":"imes-icore","category":"Fresadoras","unit_price":472536,"description":"5 ejes en seco, 100k rpm, PC integrado."},
@@ -988,7 +989,7 @@ body.locked #gate{ display:flex; }                      /* muestra el gate cuand
       });
 
       /* === Cache-busting + fallbacks de logos de marca === */
-      var ASSET_VERSION = '2026-06-09-1241052469';
+      var ASSET_VERSION = '2026-06-29-1640053837';
       function slug(s){ return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
 
       function brandLogoCandidates(brand){
