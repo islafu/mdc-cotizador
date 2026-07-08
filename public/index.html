@@ -839,7 +839,7 @@ body.locked #gate{ display:flex; }                      /* muestra el gate cuand
 
     window.addEventListener('DOMContentLoaded', function(){
       /* ===== Parámetros ===== */
-      var APR = 9.4;           // Interés anual (planes con interés)
+      var APR = 22;           // Interés anual (planes con interés)
       var IVA_PCT = 16;       // IVA fijo
       var INCLUDE_PDF_IMAGES = true;
       var MAX_QTY_PER_PRODUCT = 20;
@@ -990,7 +990,7 @@ body.locked #gate{ display:flex; }                      /* muestra el gate cuand
       });
 
       /* === Cache-busting + fallbacks de logos de marca === */
-      var ASSET_VERSION = '2026-07-08-1813394578';
+      var ASSET_VERSION = '2026-07-08-226354274';
       function slug(s){ return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
 
       function brandLogoCandidates(brand){
