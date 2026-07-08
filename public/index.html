@@ -321,10 +321,10 @@ body.locked #gate{ display:flex; }                      /* muestra el gate cuand
           </div>
 
           <div id="downCustomWrap" class="flex items-center gap-2 hidden">
-            <input id="downPctCustom" type="number" min="20" max="100" step="1" value="20"
+            <input id="downPctCustom" type="number" min="10" max="100" step="1" value="20"
                    class="border rounded px-2 py-1 w-24">
             <span>%</span>
-            <span class="text-xs brand-gray">Mín. 20%, máx. 100%</span>
+            <span class="text-xs brand-gray">Mín. 10%, máx. 100%</span>
           </div>
         </div>
 
@@ -990,7 +990,7 @@ body.locked #gate{ display:flex; }                      /* muestra el gate cuand
       });
 
       /* === Cache-busting + fallbacks de logos de marca === */
-      var ASSET_VERSION = '2026-07-08-612893028';
+      var ASSET_VERSION = '2026-07-08-1997878985';
       function slug(s){ return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
 
       function brandLogoCandidates(brand){
@@ -1161,7 +1161,7 @@ body.locked #gate{ display:flex; }                      /* muestra el gate cuand
           var input = document.getElementById('downPctCustom');
           var v = Number(input && input.value ? input.value : 20);
           if (isNaN(v)) v = 20;
-          if (v < 20) { v = 20; if(input) input.value = v; showToast('Enganche mínimo 20%.', 'info'); }
+          if (v < 10) { v = 10; if(input) input.value = v; showToast('Enganche mínimo 10%.', 'info'); }
           if (v > 100){ v = 100; if(input) input.value = v; showToast('Enganche máximo 100%.', 'info'); }
           return v / 100;
         }
